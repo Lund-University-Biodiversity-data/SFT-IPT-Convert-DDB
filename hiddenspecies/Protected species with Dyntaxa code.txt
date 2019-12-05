@@ -1,0 +1,20 @@
+"Anser erythropus";"032";100008
+"Bubo scandiacus";"130";100093
+"Falco peregrinus";"053";100054
+"Falco rusticolus";"054";100055
+"Aquila chrysaetos";"037";100011
+"Clanga clanga";"038";103061
+"Bubo bubo";"129";100020
+"Ciconia nigra";"011";100032
+"Circus macrourus";"049";205543
+"Circus pygargus";"050";100035
+"Coracias garrulus";"142";100039
+"Dendrocopos leucotos";"147";100046
+"Haliaeetus albicilla";"045";100067
+"Merops apiaster";"477";103071
+"Tyto alba";"128";100142
+"Canis lupus lupus";"708";267320
+"Gulo gulo";"717";100066
+"Vulpes lagopus";"726";100005
+"Lynx lynx";"707";100057
+"Ursus arctus";"711";100145

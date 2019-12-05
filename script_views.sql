@@ -1,4 +1,17 @@
 
+DROP VIEW IF EXISTS IPT_SFT_HIDDENSPECIES;
+DROP VIEW IF EXISTS IPT_SFT_SAMPLING;
+DROP VIEW IF EXISTS IPT_SFT_OCCURENCE;
+
+
+/* HIDDEN SPECIES */
+CREATE VIEW IPT_SFT_HIDDENSPECIES AS
+SELECT * FROM eurolist
+WHERE dyntaxa_id in (100008, 100093, 100054, 100055, 100011, 103061, 100020, 100032, 205543, 100035, 100039, 100046, 100067, 103071, 100142, 267320, 100066, 100005, 100057, 100145); 
+
+
+
+
 CREATE VIEW IPT_SFT_SAMPLING AS
 SELECT distinct CONCAT(T.datum,':',T.karta) AS eventID, 
 'Transect/Sling' AS samplingProtocol,
@@ -9,7 +22,8 @@ wgs84_lon AS decimalLongitude,
 'SE' AS countryCode
 FROM totalstandard T, koordinater_mittpunkt_topokartan K
 WHERE K.karta=T.karta
-AND art<>'000' and art<>'999'
+AND T.art<>'000' and T.art<>'999'
+and T.art not in (select distinct art from IPT_SFT_HIDDENSPECIES H)
 order by eventID
 
 /*
@@ -32,6 +46,7 @@ FROM totalstandard T, koordinater_mittpunkt_topokartan K, eurolist E
 WHERE  K.karta=T.karta
 AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
+and T.art not in (select distinct art from IPT_SFT_HIDDENSPECIES H)
 ORDER BY eventID, dyntaxa
 
 /*
