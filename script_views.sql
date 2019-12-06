@@ -14,16 +14,20 @@ WHERE dyntaxa_id in (100008, 100093, 100054, 100055, 100011, 103061, 100020, 100
 
 CREATE VIEW IPT_SFT_SAMPLING AS
 SELECT distinct CONCAT(T.datum,':',T.karta) AS eventID, 
-'Transect/Sling' AS samplingProtocol,
+'Transect/Linge' AS samplingProtocol,
 T.datum AS eventDate,
 'WGS84' AS geodeticDatum,
-wgs84_lat AS decimalLatitude,
-wgs84_lon AS decimalLongitude,
-'SE' AS countryCode
-FROM totalstandard T, koordinater_mittpunkt_topokartan K
+ROUND(cast(wgs84_lat as numeric), 3) AS decimalLatitude,
+ROUND(cast(wgs84_lon as numeric), 3) AS decimalLongitude,
+'SE' AS countryCode,
+SO.lan as stateProvince,
+SO.lsk as county
+FROM koordinater_mittpunkt_topokartan K, totalstandard T
+left join standardrutter_oversikt SO on SO.karta=T.karta
 WHERE K.karta=T.karta
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFT_HIDDENSPECIES H)
+AND t.lind>0
 order by eventID
 
 /*
@@ -40,13 +44,14 @@ T.datum AS eventDate,
 'species' AS taxonRank,
 'Animalia' AS kingdom,
 T.lind AS individualCount,
-E.englishname AS scientificName,
+E.latin AS scientificName,
 E.dyntaxa_id AS dyntaxa
 FROM totalstandard T, koordinater_mittpunkt_topokartan K, eurolist E
 WHERE  K.karta=T.karta
 AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFT_HIDDENSPECIES H)
+AND t.lind>0
 ORDER BY eventID, dyntaxa
 
 /*
