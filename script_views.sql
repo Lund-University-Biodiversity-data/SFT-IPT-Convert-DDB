@@ -1,7 +1,9 @@
 
 DROP VIEW IF EXISTS IPT_SFTstd_HIDDENSPECIES;
+DROP VIEW IF EXISTS IPT_SFTstd_STARTTIME;
 DROP VIEW IF EXISTS IPT_SFTstd_SAMPLING;
 DROP VIEW IF EXISTS IPT_SFTstd_OCCURENCE;
+DROP VIEW IF EXISTS IPT_SFTstd_EMOF;
 
 
 /* HIDDEN SPECIES */
@@ -35,18 +37,16 @@ T.datum AS eventDate,
 CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
 idRutt AS locationId,
 P.name AS stateProvince,
-C.name AS county,
 'WGS84' AS geodeticDatum,
 ROUND(cast(wgs84_lat as numeric), 3) AS decimalLatitude, /* already diffused all locations 25 000 */
 ROUND(cast(wgs84_lon as numeric), 3) AS decimalLongitude, /* already diffused all locations 25 000 */
 'SE' AS countryCode
-FROM standardrutter_oversikt O, koordinater_mittpunkt_topokartan K, ipt_convert_karta I, ipt_convert_province P, ipt_convert_county C, totalstandard T
+FROM standardrutter_oversikt O, koordinater_mittpunkt_topokartan K, ipt_convert_karta I, ipt_convert_province P, totalstandard T
 left join standardrutter_oversikt SO on SO.karta=T.karta
 left join IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE O.karta=K.karta
 AND K.karta=T.karta
 AND I.karta=K.karta
-AND C.code=O.lsk
 AND P.code=O.lan
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd_HIDDENSPECIES H)
