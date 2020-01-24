@@ -14,13 +14,12 @@ WHERE dyntaxa_id in (100008, 100093, 100054, 100055, 100011, 103061, 100020, 100
 
 /* START TIME */
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_STARTTIME AS
-SELECT karta, datum, CAST(startTime AS text), lengthStartTime
+SELECT karta, datum, CAST(startTime AS text)
 from (
-	SELECT karta, datum, art, LEAST(p1, p2, p3, p4, p5, p6, p7, p8) as startTime, LENGTH(cast(LEAST(p1, p2, p3, p4, p5, p6, p7, p8) as text) ) as lengthStartTime
+	SELECT karta, datum, art, LPAD(cast(LEAST(p1, p2, p3, p4, p5, p6, p7, p8) as text), 4, '0') as startTime
 	FROM totalstandard
 	where art='000'
-) ST
-where lengthStartTime>=3 and lengthStartTime<=4;
+) ST;
 
 /*
 

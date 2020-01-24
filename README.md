@@ -10,11 +10,14 @@ sudo -u postgres psql sft < script_2_create_final_tables.sql
 // export juste le schema
 sudo -u postgres pg_dump sft -n ipt_sftstd > sft_YYYYMMDD_ipt_sftstd.sql 
 
-sudo -u postgres psql sft < IPT_3_create_database_import.sql 
+´´´
+DROP DATABASE IF EXISTS ipt_sftstd;
+CREATE DATABASE ipt_sftstd;
+\c ipt_sftstd
+GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftstd TO ipt_sql_20 ;
+´´´
 
 sudo -u postgres psql ipt_sftstd < sft_YYYYMMDD_ipt_sftstd.sql
-
-
 
 
 
