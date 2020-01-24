@@ -1,12 +1,6 @@
 # SFT-IPT-Convert-DDB
 SFT-IPT-Convert-DDB
 
-
-´´´
-\c sft;
-CREATE SCHEMA IPT_SFTstd;
-´´´
-
 // save everythng before
 sudo -u postgres pg_dump sft > sft_YYYYMMDD.sql 
 

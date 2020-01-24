@@ -30,7 +30,7 @@ distinct CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventId,
 T.datum AS eventDate,
 CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
 idRutt AS locationId,
-P.name AS county,
+C.name AS county,
 'WGS84' AS geodeticDatum,
 ROUND(cast(wgs84_lat as numeric), 3) AS decimalLatitude, /* already diffused all locations 25 000 */
 ROUND(cast(wgs84_lon as numeric), 3) AS decimalLongitude, /* already diffused all locations 25 000 */
