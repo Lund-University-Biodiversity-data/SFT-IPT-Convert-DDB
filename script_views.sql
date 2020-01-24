@@ -41,7 +41,7 @@ P.name AS stateProvince,
 ROUND(cast(wgs84_lat as numeric), 3) AS decimalLatitude, /* already diffused all locations 25 000 */
 ROUND(cast(wgs84_lon as numeric), 3) AS decimalLongitude, /* already diffused all locations 25 000 */
 'SE' AS countryCode
-FROM standardrutter_oversikt O, koordinater_mittpunkt_topokartan K, ipt_convert_karta I, ipt_convert_province P, totalstandard T
+FROM standardrutter_oversikt O, koordinater_mittpunkt_topokartan K, IPT_SFTstd_CONVERT_KARTA I, IPT_SFTstd_CONVERT_PROVINCE P, totalstandard T
 left join standardrutter_oversikt SO on SO.karta=T.karta
 left join IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE O.karta=K.karta
@@ -93,8 +93,8 @@ CASE
 	ELSE 'species' 
 END AS taxonRank
 FROM koordinater_mittpunkt_topokartan K, eurolist E, totalstandard T
-LEFT JOIN IPT_CONVERT_PERSON P ON P.persnr=T.persnr 
-LEFT JOIN IPT_CONVERT_KARTA I ON I.karta=T.karta 
+LEFT JOIN IPT_SFTstd_CONVERT_PERSON P ON P.persnr=T.persnr 
+LEFT JOIN IPT_SFTstd_CONVERT_KARTA I ON I.karta=T.karta 
 WHERE  K.karta=T.karta
 AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
