@@ -10,8 +10,8 @@ CREATE SCHEMA IPT_SFTstd;
 // save everythng before
 sudo -u postgres pg_dump sft > sft_YYYYMMDD.sql 
 
-sudo -u postgres psql sft < IPT_convert_data_before.sql 
-sudo -u postgres psql sft < IPT_create_tables.sql 
+sudo -u postgres psql sft < script_1_convert_data_before.sql 
+sudo -u postgres psql sft < script_2_create_final_tables.sql 
 
 // export juste le schema
 sudo -u postgres pg_dump sft -n ipt_sftstd > sft_YYYYMMDD_ipt_sftstd.sql 
