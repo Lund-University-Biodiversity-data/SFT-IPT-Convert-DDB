@@ -30,7 +30,7 @@ To be fixed
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
-distinct CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventId,
+distinct CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventID,
 'http://www.fageltaxering.lu.se/inventera/metoder/standardrutter/metodik-standardrutter' AS samplingProtocol,
 CONCAT(left(T.datum, 4), '-', left(right(T.datum, 4), 2), '-', right(T.datum, 2)) AS eventDate,
 CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
@@ -77,8 +77,8 @@ Melanitta sp => 319.
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_OCCURENCE AS
 SELECT
-CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventId,
-CONCAT('SFTstd:', T.datum, ':', I.idRutt, ':', E.dyntaxa_id, ':l') as occurenceId,
+CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventID,
+CONCAT('SFTstd:', T.datum, ':', I.idRutt, ':', E.dyntaxa_id, ':l') as occurenceID,
 P.idPerson AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
@@ -113,7 +113,7 @@ AND spe_isconfidential = false
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_EMOF AS
 SELECT
-DISTINCT eventId,
+DISTINCT eventID,
 'Site type' AS measurementType,
 'Lines' AS measurementValue,
 '' AS measurementUnit
