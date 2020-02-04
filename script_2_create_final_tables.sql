@@ -32,7 +32,7 @@ CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventId,
 'http://www.fageltaxering.lu.se/inventera/metoder/standardrutter/metodik-standardrutter' AS samplingProtocol,
-T.datum AS eventDate,
+CONCAT(left(T.datum, 4), '-', left(right(T.datum, 4), 2), '-', right(T.datum, 2)) AS eventDate,
 CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
 idRutt AS locationId,
 C.name AS county,
@@ -50,6 +50,7 @@ AND C.code=O.lan
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
 AND t.lind>0
+AND T.yr<2019
 order by eventID;
 
 
@@ -77,6 +78,7 @@ Melanitta sp => 319.
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_OCCURENCE AS
 SELECT
 CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventId,
+CONCAT('SFTstd:', T.datum, ':', I.idRutt, ':', E.dyntaxa_id, ':l') as occurenceId,
 P.idPerson AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
@@ -99,6 +101,7 @@ AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
 AND t.lind>0
+AND T.yr<2019
 ORDER BY eventID, taxonID;
 
 /*

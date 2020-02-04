@@ -14,21 +14,9 @@ sudo -u postgres pg_dump sft -n ipt_sftstd > sft_YYYYMMDD_ipt_sftstd.sql
 DROP DATABASE IF EXISTS ipt_sftstd;
 CREATE DATABASE ipt_sftstd;
 \c ipt_sftstd
+GRANT USAGE ON SCHEMA ipt_sftstd TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftstd TO ipt_sql_20 ;
 ´´´
 
 sudo -u postgres psql ipt_sftstd < sft_YYYYMMDD_ipt_sftstd.sql
 
-
-
-/*
-psql -U postgres sft -n IPT_SFTstd < script_convert_data_before.sql
-psql -U postgres sft -n IPT_SFTstd < script_tables.sql
-pg_dump -U postgres sft -n IPT_SFTstd > IPT_SFTstd.sql
-
-´´´
-CREATE DATABASE ipt_sftstd;
-´´´
-
-psql -U postgres ipt_sftstd < IPT_SFTstd.sql
-*/
