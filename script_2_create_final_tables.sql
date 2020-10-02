@@ -1,4 +1,4 @@
-\c sft
+\c sft20201002
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_STARTTIME;
@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EMOF;
 /* HIDDEN SPECIES */
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES AS
 SELECT * FROM eurolist
-WHERE dyntaxa_id in (100008, 100093, 100054, 100055, 100011, 103061, 100020, 100032, 205543, 100035, 100039, 100046, 100067, 103071, 100142, 267320, 100066, 100005, 100057, 100145); 
+WHERE dyntaxa_id in (100005, 100008, 100011, 100020, 100032, 100035, 100039, 100046, 100054, 100055, 100057, 100066, 100067, 100093, 100142, 100145, 103061, 103071, 205543, 267320); 
 
 
 /* START TIME */
@@ -32,16 +32,22 @@ CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventID,
 'http://www.fageltaxering.lu.se/inventera/metoder/standardrutter/metodik-standardrutter' AS samplingProtocol,
-CONCAT(left(T.datum, 4), '-', left(right(T.datum, 4), 2), '-', right(T.datum, 2)) AS eventDate,
+TO_DATE(t.datum,'YYYYMMDD') AS eventDate,
 CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
-idRutt AS locationId,
+EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS startDayOfYear,
+CONCAT('NatStnReg-ID:', O.nat_stn_reg) AS locationId,
+cast(idRutt AS text) AS internalSiteId,
 C.name AS county,
 'WGS84' AS geodeticDatum,
 ROUND(cast(wgs84_lat as numeric), 3) AS decimalLatitude, /* already diffused all locations 25 000 */
 ROUND(cast(wgs84_lon as numeric), 3) AS decimalLongitude, /* already diffused all locations 25 000 */
-'SE' AS countryCode
+'SE' AS countryCode,
+'EUROPE' AS continent,
+'Event' as type,
+'English' as language,
+'Free usage' as accessRights,
+'Lund University' AS institutionCode
 FROM standardrutter_oversikt O, koordinater_mittpunkt_topokartan K, IPT_SFTstd.IPT_SFTstd_CONVERT_KARTA I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, totalstandard T
-left join standardrutter_oversikt SO on SO.karta=T.karta
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE O.karta=K.karta
 AND K.karta=T.karta
@@ -79,12 +85,12 @@ CREATE TABLE IPT_SFTstd.IPT_SFTstd_OCCURENCE AS
 SELECT
 CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventID,
 CONCAT('SFTstd:', T.datum, ':', I.idRutt, ':', E.dyntaxa_id, ':l') as occurenceID,
-P.idPerson AS recordedBy,
+CONCAT('SFT:recorderId:', P.idPerson) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
 T.lind AS individualCount,
 E.latin AS scientificName,
-E.dyntaxa_id AS taxonID,
+CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 genus AS genus,
 species AS specificEpithet,
 CASE 
@@ -115,8 +121,13 @@ CREATE TABLE IPT_SFTstd.IPT_SFTstd_EMOF AS
 SELECT
 DISTINCT eventID,
 'Site type' AS measurementType,
-'Lines' AS measurementValue,
-'' AS measurementUnit
+'Lines' AS measurementValue
+FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
+UNION 
+SELECT
+DISTINCT eventID,
+'Internal site Id' AS measurementType,
+internalSiteId AS measurementValue
 FROM IPT_SFTstd.IPT_SFTstd_SAMPLING;
 
 /*
