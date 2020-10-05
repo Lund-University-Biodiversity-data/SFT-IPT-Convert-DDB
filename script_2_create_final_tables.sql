@@ -56,7 +56,7 @@ AND C.code=O.lan
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
 AND t.lind>0
-AND T.yr<2019
+AND T.yr<2020
 order by eventID;
 
 
@@ -107,7 +107,7 @@ AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
 AND t.lind>0
-AND T.yr<2019
+AND T.yr<2020
 ORDER BY eventID, taxonID;
 
 /*
