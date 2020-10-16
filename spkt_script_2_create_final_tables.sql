@@ -76,18 +76,14 @@ CONCAT('SFTspkt:', T.datum, ':', P.location_id) as eventID,
 CONCAT('SFTsptk:', T.datum, ':', P.location_id, ':', E.dyntaxa_id) as occurenceID,
 CONCAT('SFT:recorderId:', Pe.idPerson) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
+'The number of individuals observed is the sum total from all of the twenty points on the route. Some data about biotopes at each point on especially older sites is available on request from data provider (see more info in metadata).' AS informationWithheld,
 'Animalia' AS kingdom,
 T.ind AS individualCount,
 E.latin AS scientificName,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 genus AS genus,
 species AS specificEpithet,
-CASE 
-	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
-	WHEN T.art IN ('237', '260', '261', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
-	WHEN T.art IN ('418') THEN 'speciesAggregate' 
-	ELSE 'species' 
-END AS taxonRank
+E.taxon_rank AS taxonRank
 FROM eurolist E, punktrutter P, totalsommar_pkt T
 LEFT JOIN IPT_SFTspkt.IPT_SFTspkt_CONVERT_PERSON Pe ON Pe.persnr=T.persnr 
 WHERE  T.art=E.art
