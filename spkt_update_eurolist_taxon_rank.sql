@@ -1,5 +1,4 @@
 ALTER TABLE eurolist ADD column taxon_rank VARCHAR(30);
-ALTER TABLE eurolist ALTER column taxon_rank;
 
 UPDATE eurolist SET taxon_rank='species' WHERE dyntaxa_id='100062';
 UPDATE eurolist SET taxon_rank='species' WHERE dyntaxa_id='100063';
