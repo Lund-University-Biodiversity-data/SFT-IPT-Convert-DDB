@@ -1,4 +1,4 @@
-\c sft
+\c
 
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_CONVERT_PERSON;
 

@@ -26,7 +26,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftstd TO ipt_sql_20 ;
 
 # SFTspkt-IPT-Convert-DDB
 
-// save everythng before
+// save everything before
 sudo -u postgres pg_dump sft > sft_YYYYMMDD.sql 
 
 sudo -u postgres psql sft < spkt_script_1_convert_data_before.sql 
@@ -47,3 +47,25 @@ GRANT USAGE ON SCHEMA ipt_sftspkt TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftspkt TO ipt_sql_20 ;
 ´´´
 
+
+# SFTkfr-IPT-Convert-DDB
+
+// save everything before
+sudo -u postgres pg_dump sft > sft_YYYYMMDD.sql 
+
+sudo -u postgres psql sft < kfr_script_1_convert_data_before.sql 
+sudo -u postgres psql sft < kfr_script_2_create_final_tables.sql 
+
+// export juste le schema
+sudo -u postgres pg_dump sft -n ipt_sftkfr > sft_YYYYMMDD_ipt_sftkfr.sql 
+
+´´´
+DROP DATABASE IF EXISTS ipt_sftkfr;
+CREATE DATABASE ipt_sftkfr;
+´´´
+sudo -u postgres psql ipt_sftkfr < sft_YYYYMMDD_ipt_sftkfr.sql
+
+´´´
+\c ipt_sftkfr
+GRANT USAGE ON SCHEMA ipt_sftkfr TO ipt_sql_20;
+GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftkfr TO ipt_sql_20 ;

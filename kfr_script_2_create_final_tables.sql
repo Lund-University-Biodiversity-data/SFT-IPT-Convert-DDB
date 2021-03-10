@@ -1,4 +1,4 @@
-\c sft
+\c
 
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_STARTENDTIME;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_SAMPLING;
@@ -43,7 +43,7 @@ K.area_m2 AS sampleSizeValue,
 TO_DATE(T.datum,'YYYYMMDD') AS eventDate,
 CASE 
 	WHEN S.start IS NULL THEN '' 
-	WHEN S.stopp IS NULL THEN to_char(S.start, 'HH24:MI')
+	WHEN S.stopp IS NULL THEN CONCAT(to_char(S.start, 'HH24:MI'), '/')
 	ELSE CONCAT(to_char(S.start, 'HH24:MI'), '/', to_char(S.stopp, 'HH24:MI'))
 END AS eventTime,
 EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS startDayOfYear,
@@ -84,7 +84,7 @@ split in 4 parts
 */
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_OCCURRENCE AS
 SELECT
-CONCAT('SFTsptk:', T.datum, ':', T.ruta, ':', E.dyntaxa_id, ':total:adult') as occurrenceID,
+CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':', E.dyntaxa_id, ':total:adult') as occurrenceID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'SFTkfr' AS CollectionCode,
 'Lund University' AS institutionCode,
@@ -110,7 +110,7 @@ AND T.art<>'045'
 UNION
 
 select
-CONCAT('SFTsptk:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
+CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'SFTkfr' AS CollectionCode,
 'Lund University' AS institutionCode,
@@ -120,10 +120,7 @@ observers AS recordedBy,
 EJ.antal AS organismQuantity,
 'individuals' AS organismQuantityType,
 'pulli' AS lifeStage,
-CASE 
-	WHEN EJ.antal = 0 THEN 'absent' 
-	ELSE 'present' 
-end AS occurrenceStatus,
+'present' AS occurrenceStatus,
 'urn:lsid:dyntaxa.se:Taxon:102935' AS taxonID,
 'Animalia' AS kingdom,
 'Somateria mollissima' AS scientificName,
@@ -136,12 +133,13 @@ and EJ.ruta=T.ruta
 and T.yr=EJ.yr
 AND T.art='000'
 and ej.ungar_inventerade='j'
+AND EJ.antal>0
 AND T.art<>'045'
 
 UNION
 
 SELECT
-CONCAT('SFTsptk:', T.datum, ':', T.ruta, ':', E.dyntaxa_id) as occurrenceID,
+CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':', E.dyntaxa_id) as occurrenceID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'SFTkfr' AS CollectionCode,
 'Lund University' AS institutionCode,
@@ -149,8 +147,8 @@ CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 observers AS recordedBy,
 'The surveyor can opt to report numbers of birds seen on islands vs on open water, but the numbers included here are for the entire square.' AS informationWithheld,
 NULL AS organismQuantity,
-'individuals' AS organismQuantityType,
-'adult' AS lifeStage,
+NULL AS organismQuantityType,
+NULL AS lifeStage,
 'present' AS occurrenceStatus,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
@@ -161,7 +159,7 @@ FROM kustfagel200_koordinater K, eurolist E, totalkustfagel200 T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE K.ruta=T.ruta
 AND T.art=E.art
-AND (T.art='714' or (T.art='719' and T.yr>2020))
+AND (T.art='714' or (T.art='719' and T.yr>2020) or (T.art='709' and T.yr>2020))
 AND T.art<>'045'
 
 ORDER BY eventID, taxonID;
@@ -203,9 +201,15 @@ WHERE K.ruta=T.ruta
 UNION
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
-CONCAT('SFTsptk:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
+CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
 'Size class' AS measurementType,
-cast(storlek as VARCHAR) AS measurementValue
+case 
+  when storlek=1 THEN '1. < 25 % of the adult size'
+  when storlek=2 THEN '2. 25-50 % of the adult size'
+  when storlek=3 THEN '3. 50-75 % of the adult size'
+  when storlek=4 THEN '4. > 75% of the adult size'
+  else ''
+end AS measurementValue
 FROM totalkustfagel200 T, kustfagel200_ejderungar EJ
 WHERE EJ.ruta=T.ruta 
 and T.yr=EJ.yr
