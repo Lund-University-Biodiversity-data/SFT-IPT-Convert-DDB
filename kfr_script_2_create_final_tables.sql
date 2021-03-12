@@ -1,6 +1,5 @@
 \c
 
-DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_STARTENDTIME;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_SAMPLING;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_OCCURRENCE;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_EMOF;
@@ -57,11 +56,9 @@ K.mitt_5x5_sweref99_n AS verbatimLatitude,
 K.mitt_5x5_sweref99_o AS verbatimLongitude,
 'epsg:3006' AS verbatimSRS,
 'epsg:4500' AS verbatimCoordinateSystem,
-/*
 'WGS84' AS geodeticDatum,
-ROUND(cast(K.wgs84_lat as numeric), 3) AS decimalLatitude,
-ROUND(cast(K.wgs84_lon as numeric), 3) AS decimalLongitude,
-*/
+mitt_5x5_wgs84_lat AS decimalLatitude,
+mitt_5x5_wgs84_lon AS decimalLongitude,
 'Dataset' as type,
 'English' as language,
 'Free usage' as accessRights
