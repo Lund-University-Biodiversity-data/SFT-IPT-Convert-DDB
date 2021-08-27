@@ -1,4 +1,6 @@
-\c sft_migration_edited
+\i lib/config.sql
+
+\c :database_name
 
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_CONVERT_PERSON;
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_CONVERT_COUNTY;

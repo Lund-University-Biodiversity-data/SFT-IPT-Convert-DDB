@@ -1,4 +1,6 @@
-\c sft_migration_edited
+\i lib/config.sql
+
+\c :database_name
 
 \set year_max 2021
 

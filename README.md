@@ -1,3 +1,8 @@
+# config file
+Create a lib/config.sql file, following the template lib/config_template.sql
+To specify the configuration variables
+
+
 # SFTstd-IPT-Convert-DDB
 SFTstd-IPT-Convert-DDB
 
