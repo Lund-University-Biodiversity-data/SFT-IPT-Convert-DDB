@@ -49,7 +49,7 @@ To be fixed
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.idRutt) as eventID,
-'Line transect survey : http://www.fageltaxering.lu.se/inventera/metoder/standardrutter/metodik-standardrutter' AS samplingProtocol,
+'Line transect survey. http://www.fageltaxering.lu.se/inventera/metoder/standardrutter/metodik-standardrutter' AS samplingProtocol,
 TO_DATE(t.datum,'YYYYMMDD') AS eventDate,
 CASE 
 	WHEN ST.startTime is null THEN ''
