@@ -37,7 +37,7 @@ CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'https://www.fageltaxering.lu.se/sites/default/files/files/Uppsatser/projektplankustfaglar_rev_2016.pdf' AS samplingProtocol,
-K.area_m2 AS sampleSizeValue,
+CAST (round(K.area_m2) AS INTEGER) AS sampleSizeValue,
 'square metre' AS sampleSizeUnit,
 TO_DATE(T.datum,'YYYYMMDD') AS eventDate,
 CASE 
@@ -45,23 +45,27 @@ CASE
 	WHEN S.stopp IS NULL THEN CONCAT(to_char(S.start, 'HH24:MI'), '/')
 	ELSE CONCAT(to_char(S.start, 'HH24:MI'), '/', to_char(S.stopp, 'HH24:MI'))
 END AS eventTime,
-EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS startDayOfYear,
-EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS endDayOfYear,
-CONCAT('SFTkfr:siteId:', T.ruta) AS locationId,
+CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
+CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
+CONCAT('http://stationsregister.miljodatasamverkan.se/so/ef/environmentalmonitoringfacility/pp/', K.nat_stn_reg) AS locationId,
+CONCAT('SFTkfr:siteId:', T.ruta) AS internalSiteId,
 'EUROPE' AS continent,
 'Sweden' AS country,
 'SE' AS countryCode,
 C.name AS county,
+/*
 K.mitt_5x5_sweref99_n AS verbatimLatitude,
 K.mitt_5x5_sweref99_o AS verbatimLongitude,
 'epsg:3006' AS verbatimSRS,
 'epsg:4500' AS verbatimCoordinateSystem,
-'WGS84' AS geodeticDatum,
+*/
+'EPSG:4326' AS geodeticDatum,
 mitt_5x5_wgs84_lat AS decimalLatitude,
 mitt_5x5_wgs84_lon AS decimalLongitude,
 'Dataset' as type,
 'English' as language,
-'Free usage' as accessRights
+'Free usage' as accessRights,
+'false' as nullvisit
 FROM kustfagel200_koordinater K, kustfagel200_start_stopp S, totalkustfagel200 T, IPT_SFTkfr.IPT_SFTkfr_CONVERT_COUNTY C
 WHERE K.ruta=T.ruta
 AND T.ruta=S.ruta 
@@ -96,7 +100,9 @@ CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
 E.latin AS scientificName,
 E.arthela AS vernacularName,
-E.taxon_rank AS taxonRank
+E.taxon_rank AS taxonRank,
+E.genus AS genus,
+E.species AS specificEpithet
 FROM kustfagel200_koordinater K, eurolist E, totalkustfagel200 T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE K.ruta=T.ruta
@@ -122,7 +128,9 @@ EJ.antal AS organismQuantity,
 'Animalia' AS kingdom,
 'Somateria mollissima' AS scientificName,
 'Ejder' AS vernacularName,
-'species' AS taxonRank
+'species' AS taxonRank,
+'Somateria' AS genus,
+'mollissima' AS specificEpithet
 FROM kustfagel200_koordinater K, kustfagel200_ejderungar EJ, totalkustfagel200 T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE K.ruta=T.ruta
@@ -151,7 +159,9 @@ CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
 E.latin AS scientificName,
 E.arthela AS vernacularName,
-E.taxon_rank AS taxonRank
+E.taxon_rank AS taxonRank,
+E.genus AS genus,
+E.species AS specificEpithet
 FROM kustfagel200_koordinater K, eurolist E, totalkustfagel200 T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE K.ruta=T.ruta
@@ -173,6 +183,34 @@ AND spe_isconfidential = false
 
 
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_EMOF AS
+
+SELECT
+DISTINCT eventID,
+NULL as occurrenceID,
+'Internal site Id' AS measurementType,
+internalSiteId AS measurementValue
+FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
+
+UNION 
+
+SELECT
+DISTINCT eventID,
+NULL as occurrenceID,
+'Site geometry' AS measurementType,
+'Polygon' AS measurementValue
+FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
+
+UNION
+
+SELECT
+DISTINCT eventID,
+NULL as occurrenceID,
+'Null visit' AS measurementType,
+nullvisit AS measurementValue
+FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
+
+UNION
+
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 NULL as occurrenceID,
@@ -184,7 +222,9 @@ END AS measurementValue
 FROM totalkustfagel200 T, kustfagel200_ejderungar EJ
 WHERE EJ.ruta=T.ruta 
 and T.yr=EJ.yr
+
 UNION
+
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 NULL as occurrenceID,
@@ -195,11 +235,13 @@ CASE
 END AS measurementValue
 FROM totalkustfagel200 T, kustfagel200_koordinater K
 WHERE K.ruta=T.ruta 
+
 UNION
+
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
-'Size class' AS measurementType,
+'Pulli size class' AS measurementType,
 case 
   when storlek=1 THEN '1. < 25 % of the adult size'
   when storlek=2 THEN '2. 25-50 % of the adult size'
