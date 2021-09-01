@@ -56,8 +56,8 @@ CASE
 	WHEN ST.startTime = '0999' THEN ''
 	ELSE CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') 
 END AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
-EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS startDayOfYear,
-EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS endDayOfYear,
+CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
+CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 CONCAT('http://stationsregister.miljodatasamverkan.se/so/ef/environmentalmonitoringfacility/pp/', O.nat_stn_reg) AS locationId,
 CONCAT('SFTstd:siteId:', cast(idRutt AS text)) AS internalSiteId,
 C.name AS county,
