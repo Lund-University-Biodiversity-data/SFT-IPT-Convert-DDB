@@ -231,7 +231,7 @@ SELECT
 distinct CONCAT('SFTspkt:', T.datum, ':', P.location_id) as eventID,
 'Method of transport' AS measurementType,
 CASE
-    WHEN p01 = 1 THEN '1. on foot'
+    WHEN p01 = 1 THEN '1. on foot or skis'
     WHEN p01 = 2 THEN '2. by bike or moped'
     WHEN p01 = 3 THEN '3. by car or motorcycle'
     WHEN p01 = 4 THEN '4. other'

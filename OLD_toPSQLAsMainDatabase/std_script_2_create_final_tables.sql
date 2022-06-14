@@ -2,7 +2,7 @@
 
 \c :database_name
 
-\set year_max 2021 
+\set year_max 2021
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_STARTTIME;
