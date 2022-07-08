@@ -1,6 +1,7 @@
 \i lib/config.sql
 
-\c :database_name
+/*\c :database_name*/
+\set database_name sft_std_from_mongo
 
 \set year_max 2022
 
