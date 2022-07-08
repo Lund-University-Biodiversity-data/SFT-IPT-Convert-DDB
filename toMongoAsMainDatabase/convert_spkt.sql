@@ -119,7 +119,7 @@ TO BE added
 AND spe_isconfidential = false
 */
 /*
-OCCURENCES
+OCCURRENCES
 
 To be fixed :
  - pkind: new DwC-A for points ?
@@ -137,7 +137,7 @@ Melanitta sp => 319.
 CREATE TABLE IPT_SFTspkt.IPT_SFTspkt_OCCURRENCE AS
 SELECT
 CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId) as eventID,
-CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id) as occurenceID,
+CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id) as occurrenceID,
 CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'The number of individuals observed is the sum total from all of the twenty points on the route. Some data about biotopes at each point on especially older sites is available on request from data provider (see more info in metadata). Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Black stork (svart stork; Ciconia nigra), Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos),  Spotted eagle (större skrikörn; Clanga clanga), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), and White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos). The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS informationWithheld,
@@ -157,7 +157,7 @@ CASE
 END AS taxonRank,
 'SFTspkt' AS collectionCode,
 'Lund University' AS institutionCode,
-'present' AS occurenceStatus
+'present' AS occurrenceStatus
 FROM lists_eurolist E, mongo_sites I, mongo_totalsommarpkt T
 LEFT JOIN mongo_persons Pe ON Pe.persnr=T.persnr 
 WHERE  T.art=E.art
@@ -171,7 +171,7 @@ UNION
 
 SELECT
 CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId) as eventID,
-CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId, ':4000104') as occurenceID,
+CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId, ':4000104') as occurrenceID,
 CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'The number of individuals observed is the sum total from all of the twenty points on the route. Some data about biotopes at each point on especially older sites is available on request from data provider (see more info in metadata). Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Black stork (svart stork; Ciconia nigra), Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos),  Spotted eagle (större skrikörn; Clanga clanga), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), and White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos). The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS informationWithheld,
@@ -186,7 +186,7 @@ CONCAT('urn:lsid:dyntaxa.se:Taxon:4000104') AS taxonID,
 'kingdom' AS taxonRank,
 'SFTspkt' AS collectionCode,
 'Lund University' AS institutionCode,
-'absent' AS occurenceStatus
+'absent' AS occurrenceStatus
 FROM mongo_sites I, IPT_SFTspkt.IPT_SFTspkt_EVENTSNOOBS T
 LEFT JOIN mongo_persons Pe ON Pe.persnr=T.persnr 
 WHERE  I.internalsiteid=CONCAT(T.persnr, '-', LPAD(CAST(T.rnr AS text), 2, '0'))

@@ -100,9 +100,6 @@ from (
 ) ST;
 
 
-
-
-
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
@@ -119,17 +116,18 @@ I.staregosid AS locationId,
 CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS internalSiteId,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
-I.decimallatitude AS decimalLatitude, /* already diffused all locations 25 000 */
-I.decimallongitude  AS decimalLongitude, /* already diffused all locations 25 000 */
+ROUND(cast(K.wgs84_lat as numeric), 5) AS decimalLatitude, /* already diffused all locations 25 000 */
+ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
 'SE' AS countryCode,
 'EUROPE' AS continent,
 'English' as language,
 'Free usage' as accessRights,
 'false' AS nullvisit
-FROM mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, mongo_totalstandard T
+FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, mongo_totalstandard T
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE T.karta=I.internalSiteId
+AND I.internalsiteid=K.karta
 AND C.code=I.lan
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
@@ -153,17 +151,18 @@ I.staregosid AS locationId,
 CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS internalSiteId,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
-I.decimallatitude AS decimalLatitude, /* already diffused all locations 25 000 */
-I.decimallongitude  AS decimalLongitude, /* already diffused all locations 25 000 */
+ROUND(cast(K.wgs84_lat as numeric), 5) AS decimalLatitude, /* already diffused all locations 25 000 */
+ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
 'SE' AS countryCode,
 'EUROPE' AS continent,
 'English' as language,
 'Free usage' as accessRights,
 'true' AS nullvisit
-FROM mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS T
+FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS T
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE T.karta=I.internalSiteId
+AND I.internalsiteid=K.karta
 AND C.code=I.lan
 
 

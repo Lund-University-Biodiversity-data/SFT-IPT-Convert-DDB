@@ -80,19 +80,19 @@ sudo -u postgres psql sft_std_from_mongo < toMongoAsMainDatabase/convert_std.sql
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd  > sft_std_from_mongo_20220614.sql
-tar cvzf sft_std_from_mongo_20220614.sql.tar.gz sft_std_from_mongo_20220614.sql
-scp sft_std_from_mongo_20220614.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd  > sft_std_from_mongo_20220708.sql
+tar cvzf sft_std_from_mongo_20220708.sql.tar.gz sft_std_from_mongo_20220708.sql
+scp sft_std_from_mongo_20220708.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_std_from_mongo_20220614.sql.tar.gz
+tar xvf sft_std_from_mongo_20220708.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftstd;
 CREATE DATABASE ipt_sftstd;
 \q
-sudo -u postgres psql ipt_sftstd < sft_std_from_mongo_20220614.sql
+sudo -u postgres psql ipt_sftstd < sft_std_from_mongo_20220708.sql
 sudo -u postgres psql
 \c ipt_sftstd
 GRANT USAGE ON SCHEMA ipt_sftstd TO ipt_sql_20;

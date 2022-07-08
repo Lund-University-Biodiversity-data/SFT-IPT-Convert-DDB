@@ -194,7 +194,7 @@ CONCAT('urn:lsid:dyntaxa.se:Taxon:4000104') AS taxonID,
 'class' AS taxonRank,
 'SFTvpkt' AS collectionCode,
 'Lund University' AS institutionCode,
-'absent' AS occurenceStatus
+'absent' AS occurrenceStatus
 FROM mongo_sites I, IPT_SFTvpkt.IPT_SFTvpkt_EVENTSNOOBS T
 LEFT JOIN mongo_persons Pe ON Pe.persnr=T.persnr 
 WHERE  I.internalsiteid=CONCAT(T.persnr, '-', LPAD(CAST(T.rnr AS text), 2, '0'))
