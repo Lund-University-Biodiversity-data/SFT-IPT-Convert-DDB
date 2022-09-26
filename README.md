@@ -57,10 +57,26 @@ WHERE length(art)<3
  - cenntroidTopoKartan (ex koordinater_mittpunkt_topokartan, coming from excel custom extract) => mongo_centroidtopokartan
 
 
-
-
-
-
+### SFTkfr-IPT-Convert-DDB
+# Requirements :
+´´´
+CREATE DATABASE sft_kfr_from_mongo_to_dwca;
+´´´
+ - medobs (coming from excel custom extract, KUST medobs) => mongo_medobs
+(varchar(3) for the last 4 columns ja/nej)
+ - sites (coming from mongo excel extract, SITES) => mongo_sites
+ - records (coming from mongo excel extract, RECORDS) => mongo_totalkust
+ (verificationStatus varchar(15), art(varchar(3)), datum as varchar(8))
+´´´
+UPDATE mongo_totalkust SET art = LPAD(art, 3, '0')
+WHERE length(art)<3
+´´´
+ - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
+ - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr638 + 3 mammals (709, 714, 719). WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10) => lists_eurolist_dr638_3mammals
+´´´
+UPDATE lists_eurolist_dr638_3mammals SET art = LPAD(art, 3, '0')
+WHERE length(art)<3
+´´´
 
 # eurolist import from lists
 varchar(2) for 2 field euring
@@ -69,6 +85,13 @@ remove the space in "Supplied Name
 
 
 ### scripts to canmove server
+
+
+# KFR
+
+´´´
+sudo -u postgres psql sft_kfr_from_mongo_to_dwca < toMongoAsMainDatabase/convert_kfr.sql
+´´´
 
 
 # STD

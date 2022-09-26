@@ -3,6 +3,8 @@
 /*\c :database_name*/
 \set database_name sft_spkt_from_mongo_to_dwca
 
+
+/* TO BE CHANGED TO Y-1 TO USE year_max<= instead of < */
 \set year_max 2022
 
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_HIDDENSPECIES;

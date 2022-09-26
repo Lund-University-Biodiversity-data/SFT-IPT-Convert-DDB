@@ -3,6 +3,8 @@
 /*\c :database_name*/
 \set database_name sft_std_from_mongo
 
+
+/* TO BE CHANGED TO Y-1 TO USE year_max<= instead of < */
 \set year_max 2022
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_TIMES;
