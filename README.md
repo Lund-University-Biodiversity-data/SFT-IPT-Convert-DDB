@@ -188,3 +188,37 @@ GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftvpkt TO ipt_sql_20 ;
 
 
 ´´´
+
+
+
+
+# KFR
+
+locally :
+
+´´´
+sudo -u postgres psql sft_kfr_from_mongo_to_dwca < toMongoAsMainDatabase/convert_kfr.sql
+´´´
+then export the whole database to canmoveapp
+´´´
+sudo -u postgres pg_dump sft_kfr_from_mongo_to_dwca -n ipt_sftkfr  > sft_kfr_from_mongo_20220926.sql
+tar cvzf sft_kfr_from_mongo_20220926.sql.tar.gz sft_kfr_from_mongo_20220926.sql
+scp sft_kfr_from_mongo_20220926.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+´´´
+then on canmoveapp
+´´´
+cd script_IPT_database/saves/
+tar xvf sft_kfr_from_mongo_20220926.sql.tar.gz
+sudo -u postgres psql
+DROP DATABASE ipt_sftkfr;
+CREATE DATABASE ipt_sftkfr;
+\q
+sudo -u postgres psql ipt_sftkfr < sft_kfr_from_mongo_20220926.sql
+sudo -u postgres psql
+\c ipt_sftkfr
+GRANT USAGE ON SCHEMA ipt_sftkfr TO ipt_sql_20;
+GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftkfr TO ipt_sql_20 ;
+\q
+
+
+´´´
