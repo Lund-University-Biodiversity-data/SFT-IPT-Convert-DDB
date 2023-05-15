@@ -11,15 +11,22 @@ sudo -u postgres pg_dump -t eurolist sft_20220525 | sudo -u postgres psql sft_st
 ### SFTstd-IPT-Convert-DDB
 # Requirements :
  - records (coming from mongo excel extract, RECORDS) => mongo_totalstandard
-Make sure that the art column contains 3 digits
+
+-datum varchar(8)
+-art varchar(3)
+-Make sure that the art column contains 3 digits
 ´´´
 UPDATE mongo_totalstandard SET art = LPAD(art, 3, '0')
 WHERE length(art)<3
 ´´´
  - sites (coming from mongo excel extract, SITES) => mongo_sites
  - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
- - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3) => lists_eurolist
-
+ - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3) => lists_module_biodiv
+ concat with mammals. CHeck the same colomns. Rename suppliedname
+´´´
+UPDATE lists_module_biodiv SET art = LPAD(art, 3, '0')
+WHERE length(art)<3
+´´´
 
 
 
@@ -96,6 +103,7 @@ sudo -u postgres psql sft_kfr_from_mongo_to_dwca < toMongoAsMainDatabase/convert
 
 # STD
 
+first make sure you have the last verison of the ecodata-mongo database
 locally :
 
 ´´´

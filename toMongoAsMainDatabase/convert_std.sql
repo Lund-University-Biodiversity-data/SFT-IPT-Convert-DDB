@@ -5,7 +5,7 @@
 
 
 /* TO BE CHANGED TO Y-1 TO USE year_max<= instead of < */
-\set year_max 2022
+\set year_max 2023
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_TIMES;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY;
@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_SAMPLING;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_OCCURRENCE;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EMOF;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS;
+DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_detailsart;
 
 DROP SCHEMA IF EXISTS IPT_SFTstd;
 CREATE SCHEMA IPT_SFTstd;
@@ -53,8 +54,13 @@ INSERT INTO IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY (code, name) VALUES ('Z', 'Jäm
 
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES AS
-SELECT * FROM lists_eurolist
+SELECT * FROM lists_module_biodiv
 WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035', '100039', '100046', '100054', '100055', '100057', '100066', '100067', '100093', '100142', '100145', '103061', '103071', '205543', '267320'); 
+
+
+CREATE TABLE IPT_SFTstd.IPT_SFTstd_detailsart AS
+SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
+FROM lists_module_biodiv;
 
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS AS
@@ -118,13 +124,18 @@ I.staregosid AS locationId,
 CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS internalSiteId,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
+17700 AS coordinateUncertaintyInMeters,
+'The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS locationRemarks,
 ROUND(cast(K.wgs84_lat as numeric), 5) AS decimalLatitude, /* already diffused all locations 25 000 */
 ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
 'SE' AS countryCode,
 'EUROPE' AS continent,
 'English' as language,
-'Free usage' as accessRights,
+'Limited' as accessRights,
+'Lund University' AS institutionCode,
+'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
+'Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), Snowy owl (fjälluggla; Bubo scandiacus), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; Vulpes lagopus).' AS informationWithheld,
 'false' AS nullvisit
 FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, mongo_totalstandard T
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
@@ -153,6 +164,8 @@ I.staregosid AS locationId,
 CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS internalSiteId,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
+17700 AS coordinateUncertaintyInMeters,
+'The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS locationRemarks,
 ROUND(cast(K.wgs84_lat as numeric), 5) AS decimalLatitude, /* already diffused all locations 25 000 */
 ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
@@ -160,6 +173,9 @@ ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused 
 'EUROPE' AS continent,
 'English' as language,
 'Free usage' as accessRights,
+'Lund University' AS institutionCode,
+'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
+'Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), Snowy owl (fjälluggla; Bubo scandiacus), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; Vulpes lagopus).' AS informationWithheld,
 'true' AS nullvisit
 FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS T
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
@@ -183,26 +199,28 @@ CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id, ':L') as occu
 CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+T.lind AS individualCount,
 T.lind AS organismQuantity,
 'individuals' AS organismQuantityType,
 E.SuppliedName AS scientificName,
 E.arthela AS vernacularName,
-CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
-genus AS genus,
-species AS specificEpithet,
+E.dyntaxa_id AS taxonID,
+DA.genus AS genus,
+DA.specificepithet AS specificEpithet,
+DA.infraspecificepithet AS infraSpecificEpithet,
 CASE 
 	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
 	WHEN T.art IN ('237', '260', '261', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
 	WHEN T.art IN ('418') THEN 'speciesAggregate' 
 	ELSE 'species' 
 END AS taxonRank,
-'The number of individuals observed is the sum total from all the surveyed lines on the route. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos),  White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), Snowy owl (fjälluggla; Bubo scandiacus), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; (Vulpes lagopus). The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS informationWithheld,
 'SFTstd' AS collectionCode,
-'Lund University' AS institutionCode,
-'present' AS occurrenceStatus
-FROM mongo_sites I, lists_eurolist E, mongo_totalstandard T
+'present' AS occurrenceStatus,
+'The number of individuals observed is the sum total from all the surveyed lines on the route.' AS occurrenceRemarks
+FROM mongo_sites I, lists_module_biodiv E, IPT_SFTstd.IPT_SFTstd_detailsart DA, mongo_totalstandard T
 LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE  I.internalSiteId=T.karta
+AND DA.art=E.art
 AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
@@ -217,18 +235,19 @@ CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':5000001', ':L') as occurrenceI
 CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+0 AS individualCount,
 0 AS organismQuantity,
 'individuals' AS organismQuantityType,
 'Animalia' AS scientificName,
 'AnimalsIncludedInSurvey' AS vernacularName,
-CONCAT('urn:lsid:dyntaxa.se:Taxon:', '5000001') AS taxonID,
+'5000001' AS taxonID,
 '' AS genus,
 '' AS specificEpithet,
+'' AS infraSpecificEpithet,
 'kingdom' AS taxonRank,
-'The number of individuals observed is the sum total from all the surveyed lines on the route. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos),  White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), Snowy owl (fjälluggla; Bubo scandiacus), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; (Vulpes lagopus). The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS informationWithheld,
 'SFTstd' AS collectionCode,
-'Lund University' AS institutionCode,
-'absent' AS occurrenceStatus
+'absent' AS occurrenceStatus,
+'The number of individuals observed is the sum total from all the surveyed lines on the route.' AS occurrenceRemarks
 FROM mongo_sites I, IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS T
 LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE  I.internalSiteId=T.karta
@@ -241,7 +260,7 @@ ORDER BY eventID, taxonID;
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_EMOF AS
 SELECT
 DISTINCT eventID,
-'Site geometry' AS measurementType,
+'Location type' AS measurementType,
 'Line' AS measurementValue
 FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
 UNION 
