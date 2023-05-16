@@ -21,6 +21,12 @@ WHERE length(art)<3
 ´´´
  - sites (coming from mongo excel extract, SITES) => mongo_sites
  - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
+telnummer varcar(32)
+persnr varchar(64)
++ CHECK THE NEW anonymized Ids. dit excel file with :
+db.person.update({personId:'bf357895-d746-4a8e-b30e-e84a4889d773'},{$set:{anonymizedId:2825}});
+
+
  - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3) => lists_module_biodiv
  concat with mammals. CHeck the same colomns. Rename suppliedname
 ´´´
