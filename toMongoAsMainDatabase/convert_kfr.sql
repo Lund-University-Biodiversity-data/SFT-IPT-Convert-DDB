@@ -1,6 +1,6 @@
 \i lib/config.sql
 
-\set year_max 2021
+\set year_max 2022
 
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_SAMPLING;
@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_OCCURRENCE;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_EMOF;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_OBSERVERS;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_CONVERT_COUNTY;
+DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_DETAILSART;
 
 DROP SCHEMA IF EXISTS IPT_SFTkfr;
 CREATE SCHEMA IPT_SFTkfr;
@@ -40,11 +41,18 @@ INSERT INTO IPT_SFTkfr.IPT_SFTkfr_CONVERT_COUNTY (code, name) VALUES ('X', 'Gäv
 INSERT INTO IPT_SFTkfr.IPT_SFTkfr_CONVERT_COUNTY (code, name) VALUES ('Y', 'Västernorrlands län');
 INSERT INTO IPT_SFTkfr.IPT_SFTkfr_CONVERT_COUNTY (code, name) VALUES ('Z', 'Jämtlands län');
 
+/* TEMPORARY FIX FOR FREDRIK ??
+there is one site in 2022 that has "-1" as the sum of birds seen of a particular species (sillgrissla). This is Fredriks way of showing that he hasn't got the real number yet (and won't have perhaps until next year). So we just fill in occurrenceStatus with "present" and leave this and the next field empty.
+*/
+UPDATE mongo_totalkust SET ind=null WHERE ind=-1;
 
+
+/* fix starttime / endtime who are 00:00 */
+UPDATE mongo_totalkust 
+SET surveystarttime=null, surveyfinishtime=null 
+WHERE surveystarttime='00:00' and surveyfinishtime='00:00';
 
 /* TO BE REPLACED WITH PROPER SKYDKLASS */
-
-
 /* HIDDENSPECIES 045 */
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES AS
 SELECT * FROM lists_eurolist_dr638_3mammals
@@ -52,6 +60,9 @@ WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035',
 /* and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES) */
 
 
+CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_DETAILSART AS
+SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
+FROM lists_eurolist_dr638_3mammals;
 
 
 /* START TIME */
@@ -97,9 +108,9 @@ CASE
 END AS eventTime,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
-CONCAT('http://stationsregister.miljodatasamverkan.se/so/ef/environmentalmonitoringfacility/pp/', K.staregppid) AS locationId,
+K.staregppid AS locationId,
 CONCAT('SFTkfr:siteId:', T.ruta) AS internalSiteId,
-'The surveyor can opt to report numbers of birds seen on islands vs on open water, but the numbers included in this dataset are for the entire square. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently this concerns one species only: White-tailed eagle (havsörn; Haliaeetus albicilla). In addition, razorbills and guillemots (tordmule; Alca torda and sillgrissla; Uria aalge) on Stora Karlsö (square I0002) are at present not included in this dataset. The coordinates supplied are for the central point of a 5 x 5 km square, within which the central point of the curvey square is located.' AS informationWithheld,
+'The surveyor can opt to report numbers of birds seen on islands vs on open water, but the numbers included in this dataset are for the entire square. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently this concerns one species only: White-tailed eagle (havsörn; Haliaeetus albicilla). In addition, data for razorbills (tordmule; Alca torda) on Stora Karlsö (square I0002) are at present not included in this dataset.' AS informationWithheld,
 'EUROPE' AS continent,
 'Sweden' AS country,
 'SE' AS countryCode,
@@ -111,10 +122,14 @@ K.mitt_5x5_sweref99_o AS verbatimLongitude,
 'epsg:4500' AS verbatimCoordinateSystem,
 */
 'EPSG:4326' AS geodeticDatum,
+3500 AS coordinateUncertaintyInMeters,
+'The coordinates supplied are for the central point of a 5 x 5 km square, within which the central point of the curvey square is located.' AS locationRemarks,
 ROUND(K.mitt_5x5_wgs84_lat::float8::numeric, 5) AS decimalLatitude, /* cast to float8 first, then to numeric in order to round */
 ROUND(K.mitt_5x5_wgs84_lon::float8::numeric, 5) AS decimalLongitude, /* cast to float8 first, then to numeric in order to round */
 'English' as language,
-'Free usage' as accessRights,
+'Limited' as accessRights,
+'Lund University' AS institutionCode,
+'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
 'false' as nullvisit,
 pullicounted AS pullicounted_for_emof /* for emof only */
 FROM mongo_sites K, mongo_totalkust T, IPT_SFTkfr.IPT_SFTkfr_CONVERT_COUNTY C
@@ -137,7 +152,6 @@ SELECT
 CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':', E.dyntaxa_id, ':total:adult') as occurrenceID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'SFTkfr' AS CollectionCode,
-'Lund University' AS institutionCode,
 'HumanObservation' AS basisOfRecord,
 observers AS recordedBy,
 T.ind AS individualCount,
@@ -145,22 +159,24 @@ T.ind AS organismQuantity,
 'individuals' AS organismQuantityType,
 'adult' AS lifeStage,
 'present' AS occurrenceStatus,
-CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
+E.dyntaxa_id AS taxonID,
 'Animalia' AS kingdom,
 E.suppliedname AS scientificName,
 E.arthela AS vernacularName,
 CASE 
 	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
-	WHEN T.art IN ('237', '260', '261', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
+	WHEN T.art IN ('237', '260', '261', '504', '505', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
 	WHEN T.art IN ('418') THEN 'speciesAggregate' 
 	ELSE 'species' 
 END AS taxonRank,
-E.genus AS genus,
-E.species AS specificEpithet
-FROM mongo_sites K, lists_eurolist_dr638_3mammals E, mongo_totalkust T
+DA.genus AS genus,
+DA.specificepithet AS specificEpithet,
+DA.infraspecificepithet AS infraSpecificEpithet
+FROM mongo_sites K, lists_eurolist_dr638_3mammals E, IPT_SFTkfr.IPT_SFTkfr_DETAILSART DA, mongo_totalkust T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE k.internalsiteid=T.ruta
 AND T.art=E.art
+AND DA.art=E.art
 AND T.art>'000' AND T.art<'700' 
 and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES)
 AND T.yr<=:year_max
@@ -171,7 +187,6 @@ select
 CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'SFTkfr' AS CollectionCode,
-'Lund University' AS institutionCode,
 'HumanObservation' AS basisOfRecord,
 observers AS recordedBy,
 T.pullicount AS individualCount,
@@ -182,13 +197,14 @@ CASE
 	WHEN T.pullicount = 0 THEN 'absent'
 	ELSE 'present' 
 END AS occurrenceStatus,
-'urn:lsid:dyntaxa.se:Taxon:102935' AS taxonID,
+'102935' AS taxonID,
 'Animalia' AS kingdom,
 'Somateria mollissima' AS scientificName,
 'Ejder' AS vernacularName,
 'species' AS taxonRank,
 'Somateria' AS genus,
-'mollissima' AS specificEpithet
+'mollissima' AS specificEpithet,
+'' AS infraSpecificEpithet
 FROM mongo_sites K, mongo_totalkust T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE k.internalsiteid=T.ruta
@@ -203,7 +219,6 @@ SELECT
 CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':', E.dyntaxa_id) as occurrenceID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 'SFTkfr' AS CollectionCode,
-'Lund University' AS institutionCode,
 'HumanObservation' AS basisOfRecord,
 observers AS recordedBy,
 NULL AS individualCount,
@@ -211,22 +226,24 @@ NULL AS organismQuantity,
 NULL AS organismQuantityType,
 NULL AS lifeStage,
 'present' AS occurrenceStatus,
-CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
+E.dyntaxa_id AS taxonID,
 'Animalia' AS kingdom,
 E.suppliedname AS scientificName,
 E.arthela AS vernacularName,
 CASE 
 	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
-	WHEN T.art IN ('237', '260', '261', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
+	WHEN T.art IN ('237', '260', '261', '504', '505', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
 	WHEN T.art IN ('418') THEN 'speciesAggregate' 
 	ELSE 'species' 
 END AS taxonRank,
-E.genus AS genus,
-E.species AS specificEpithet
-FROM mongo_sites K, lists_eurolist_dr638_3mammals E, mongo_totalkust T
+DA.genus AS genus,
+DA.specificepithet AS specificEpithet,
+DA.infraspecificepithet AS infraSpecificEpithet
+FROM mongo_sites K, lists_eurolist_dr638_3mammals E, IPT_SFTkfr.IPT_SFTkfr_DETAILSART DA, mongo_totalkust T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE k.internalsiteid=T.ruta
 AND T.art=E.art
+AND DA.art=E.art
 AND (T.art='714' or (T.art='719' and T.yr>2020) or (T.art='709' and T.yr>2020))
 and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES)
 AND T.yr<=:year_max
@@ -258,8 +275,8 @@ UNION
 SELECT
 DISTINCT eventID,
 NULL as occurrenceID,
-'Site geometry' AS measurementType,
-'Polygon' AS measurementValue
+'Location type' AS measurementType,
+'Square' AS measurementValue
 FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
 
 UNION

@@ -85,7 +85,7 @@ UPDATE mongo_totalkust SET art = LPAD(art, 3, '0')
 WHERE length(art)<3
 ´´´
  - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
- - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr638 + 3 mammals (709, 714, 719). WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10) => lists_eurolist_dr638_3mammals
+ - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr638 + 3 mammals (709, 714, 719). WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10, rename suppliedname column header) => lists_eurolist_dr638_3mammals
 ´´´
 UPDATE lists_eurolist_dr638_3mammals SET art = LPAD(art, 3, '0')
 WHERE length(art)<3
@@ -100,13 +100,6 @@ remove the space in "Supplied Name
 ### scripts to canmove server
 
 
-# KFR
-
-´´´
-sudo -u postgres psql sft_kfr_from_mongo_to_dwca < toMongoAsMainDatabase/convert_kfr.sql
-´´´
-
-
 # STD
 
 first make sure you have the last verison of the ecodata-mongo database
@@ -117,19 +110,19 @@ sudo -u postgres psql sft_std_from_mongo < toMongoAsMainDatabase/convert_std.sql
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd  > sft_std_from_mongo_20220708.sql
-tar cvzf sft_std_from_mongo_20220708.sql.tar.gz sft_std_from_mongo_20220708.sql
-scp sft_std_from_mongo_20220708.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd  > sft_std_from_mongo_202XXXXXX.sql
+tar cvzf sft_std_from_mongo_202XXXXXX.sql.tar.gz sft_std_from_mongo_202XXXXXX.sql
+scp sft_std_from_mongo_202XXXXXX.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_std_from_mongo_20220708.sql.tar.gz
+tar xvf sft_std_from_mongo_202XXXXXX.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftstd;
 CREATE DATABASE ipt_sftstd;
 \q
-sudo -u postgres psql ipt_sftstd < sft_std_from_mongo_20220708.sql
+sudo -u postgres psql ipt_sftstd < sft_std_from_mongo_202XXXXXX.sql
 sudo -u postgres psql
 \c ipt_sftstd
 GRANT USAGE ON SCHEMA ipt_sftstd TO ipt_sql_20;
@@ -215,19 +208,19 @@ sudo -u postgres psql sft_kfr_from_mongo_to_dwca < toMongoAsMainDatabase/convert
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_kfr_from_mongo_to_dwca -n ipt_sftkfr  > sft_kfr_from_mongo_20220926.sql
-tar cvzf sft_kfr_from_mongo_20220926.sql.tar.gz sft_kfr_from_mongo_20220926.sql
-scp sft_kfr_from_mongo_20220926.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_kfr_from_mongo_to_dwca -n ipt_sftkfr  > sft_kfr_from_mongo_XXXXXXXX.sql
+tar cvzf sft_kfr_from_mongo_XXXXXXXX.sql.tar.gz sft_kfr_from_mongo_XXXXXXXX.sql
+scp sft_kfr_from_mongo_XXXXXXXX.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_kfr_from_mongo_20220926.sql.tar.gz
+tar xvf sft_kfr_from_mongo_XXXXXXXX.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftkfr;
 CREATE DATABASE ipt_sftkfr;
 \q
-sudo -u postgres psql ipt_sftkfr < sft_kfr_from_mongo_20220926.sql
+sudo -u postgres psql ipt_sftkfr < sft_kfr_from_mongo_XXXXXXXX.sql
 sudo -u postgres psql
 \c ipt_sftkfr
 GRANT USAGE ON SCHEMA ipt_sftkfr TO ipt_sql_20;

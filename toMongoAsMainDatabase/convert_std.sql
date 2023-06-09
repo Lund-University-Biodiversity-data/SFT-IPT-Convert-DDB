@@ -17,7 +17,7 @@ DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_SAMPLING;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_OCCURRENCE;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EMOF;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS;
-DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_detailsart;
+DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_DETAILSART;
 
 DROP SCHEMA IF EXISTS IPT_SFTstd;
 CREATE SCHEMA IPT_SFTstd;
@@ -59,7 +59,7 @@ SELECT * FROM lists_module_biodiv
 WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035', '100039', '100046', '100054', '100055', '100057', '100066', '100067', '100093', '100142', '100145', '103061', '103071', '205543', '267320'); 
 
 
-CREATE TABLE IPT_SFTstd.IPT_SFTstd_detailsart AS
+CREATE TABLE IPT_SFTstd.IPT_SFTstd_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
 FROM lists_module_biodiv;
 
@@ -232,7 +232,7 @@ END AS taxonRank,
 'SFTstd' AS collectionCode,
 'present' AS occurrenceStatus,
 'The number of individuals observed is the sum total from all the surveyed lines on the route.' AS occurrenceRemarks
-FROM mongo_sites I, lists_module_biodiv E, IPT_SFTstd.IPT_SFTstd_detailsart DA, mongo_totalstandard T
+FROM mongo_sites I, lists_module_biodiv E, IPT_SFTstd.IPT_SFTstd_DETAILSART DA, mongo_totalstandard T
 LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE  I.internalSiteId=T.karta
 AND DA.art=E.art
