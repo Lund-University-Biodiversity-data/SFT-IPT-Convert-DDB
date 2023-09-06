@@ -41,7 +41,7 @@ WHERE length(art)<3
 ´´´
 CREATE DATABASE sft_spkt_from_mongo_to_dwca;
 ´´´
- - records (coming from mongo excel extract, RECORDS. Watchout art varchar 3 and datum varchar 8) => mongo_totalsommarpkt
+ - records (coming from mongo excel extract, RECORDS. Watchout art varchar 3 and datum varchar 8, remove if double column final) => mongo_totalsommarpkt
 Make sure that the art column contains 3 digits
 ´´´
 UPDATE mongo_totalsommarpkt SET art = LPAD(art, 3, '0')
@@ -49,8 +49,12 @@ WHERE length(art)<3
 ´´´
  - sites (coming from mongo excel extract, SITES) => mongo_sites
  - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
- - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10) => lists_eurolist
- - cenntroidTopoKartan (ex koordinater_mittpunkt_topokartan, coming from excel custom extract) => mongo_centroidtopokartan
+ - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10, delete one of the 2 columns guid, rename suppliedname column header) => lists_module_biodiv
+ - centroidTopoKartan (ex koordinater_mittpunkt_topokartan, coming from excel custom extract) => mongo_centroidtopokartan
+´´´
+UPDATE lists_module_biodiv SET art = LPAD(art, 3, '0')
+WHERE length(art)<3
+´´´
 
 
 ### SFTvpkt-IPT-Convert-DDB
@@ -66,7 +70,7 @@ WHERE length(art)<3
 ´´´
  - sites (coming from mongo excel extract, SITES) => mongo_sites
  - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
- - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10) => lists_eurolist
+ - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10, delete one of the 2 columns guid, rename suppliedname column header) => lists_module_biodiv
  - cenntroidTopoKartan (ex koordinater_mittpunkt_topokartan, coming from excel custom extract) => mongo_centroidtopokartan
 
 
@@ -142,19 +146,19 @@ sudo -u postgres psql sft_spkt_from_mongo_to_dwca < toMongoAsMainDatabase/conver
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_spkt_from_mongo_to_dwca -n ipt_sftspkt  > sft_spkt_from_mongo_20220708.sql
-tar cvzf sft_spkt_from_mongo_20220708.sql.tar.gz sft_spkt_from_mongo_20220708.sql
-scp sft_spkt_from_mongo_20220708.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_spkt_from_mongo_to_dwca -n ipt_sftspkt  > sft_spkt_from_mongo_20230905.sql
+tar cvzf sft_spkt_from_mongo_20230905.sql.tar.gz sft_spkt_from_mongo_20230905.sql
+scp sft_spkt_from_mongo_20230905.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_spkt_from_mongo_20220708.sql.tar.gz
+tar xvf sft_spkt_from_mongo_20230905.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftspkt;
 CREATE DATABASE ipt_sftspkt;
 \q
-sudo -u postgres psql ipt_sftspkt < sft_spkt_from_mongo_20220708.sql
+sudo -u postgres psql ipt_sftspkt < sft_spkt_from_mongo_20230905.sql
 sudo -u postgres psql
 \c ipt_sftspkt
 GRANT USAGE ON SCHEMA ipt_sftspkt TO ipt_sql_20;
@@ -174,19 +178,19 @@ sudo -u postgres psql sft_vpkt_from_mongo_to_dwca < toMongoAsMainDatabase/conver
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_vpkt_from_mongo_to_dwca -n ipt_sftvpkt  > sft_vpkt_from_mongo_20220708.sql
-tar cvzf sft_vpkt_from_mongo_20220708.sql.tar.gz sft_vpkt_from_mongo_20220708.sql
-scp sft_vpkt_from_mongo_20220708.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_vpkt_from_mongo_to_dwca -n ipt_sftvpkt  > sft_vpkt_from_mongo_20230905.sql
+tar cvzf sft_vpkt_from_mongo_20230905.sql.tar.gz sft_vpkt_from_mongo_20230905.sql
+scp sft_vpkt_from_mongo_20230905.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_vpkt_from_mongo_20220708.sql.tar.gz
+tar xvf sft_vpkt_from_mongo_20230905.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftvpkt;
 CREATE DATABASE ipt_sftvpkt;
 \q
-sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20220708.sql
+sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20230905.sql
 sudo -u postgres psql
 \c ipt_sftvpkt
 GRANT USAGE ON SCHEMA ipt_sftvpkt TO ipt_sql_20;

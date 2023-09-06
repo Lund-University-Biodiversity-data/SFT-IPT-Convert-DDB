@@ -62,6 +62,11 @@ WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035',
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
 FROM lists_module_biodiv;
+/* Manual fix of the art that ends with "L" or "Li" or "T" */
+UPDATE IPT_SFTstd.IPT_SFTstd_DETAILSART
+SET infraSpecificEpithet=''
+WHERE LENGTH(infraSpecificEpithet)>0 AND LENGTH(infraSpecificEpithet)<3
+
 
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS AS
