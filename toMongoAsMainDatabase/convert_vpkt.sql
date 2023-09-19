@@ -122,7 +122,7 @@ CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CRE
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
 CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT) AS eventDate, /* cast as text to allow range later */
-'' AS eventTime,
+CONCAT(ST.startTime,'/',ST.endTime) AS eventTime,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.staregosid AS locationId,

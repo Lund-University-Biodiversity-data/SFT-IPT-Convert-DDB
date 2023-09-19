@@ -146,19 +146,19 @@ sudo -u postgres psql sft_spkt_from_mongo_to_dwca < toMongoAsMainDatabase/conver
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_spkt_from_mongo_to_dwca -n ipt_sftspkt  > sft_spkt_from_mongo_20230905.sql
-tar cvzf sft_spkt_from_mongo_20230905.sql.tar.gz sft_spkt_from_mongo_20230905.sql
-scp sft_spkt_from_mongo_20230905.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_spkt_from_mongo_to_dwca -n ipt_sftspkt  > sft_spkt_from_mongo_20230918.sql
+tar cvzf sft_spkt_from_mongo_20230918.sql.tar.gz sft_spkt_from_mongo_20230918.sql
+scp sft_spkt_from_mongo_20230918.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_spkt_from_mongo_20230905.sql.tar.gz
+tar xvf sft_spkt_from_mongo_20230918.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftspkt;
 CREATE DATABASE ipt_sftspkt;
 \q
-sudo -u postgres psql ipt_sftspkt < sft_spkt_from_mongo_20230905.sql
+sudo -u postgres psql ipt_sftspkt < sft_spkt_from_mongo_20230918.sql
 sudo -u postgres psql
 \c ipt_sftspkt
 GRANT USAGE ON SCHEMA ipt_sftspkt TO ipt_sql_20;
@@ -178,19 +178,19 @@ sudo -u postgres psql sft_vpkt_from_mongo_to_dwca < toMongoAsMainDatabase/conver
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_vpkt_from_mongo_to_dwca -n ipt_sftvpkt  > sft_vpkt_from_mongo_20230905.sql
-tar cvzf sft_vpkt_from_mongo_20230905.sql.tar.gz sft_vpkt_from_mongo_20230905.sql
-scp sft_vpkt_from_mongo_20230905.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_vpkt_from_mongo_to_dwca -n ipt_sftvpkt  > sft_vpkt_from_mongo_20230918.sql
+tar cvzf sft_vpkt_from_mongo_20230918.sql.tar.gz sft_vpkt_from_mongo_20230918.sql
+scp sft_vpkt_from_mongo_20230918.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_vpkt_from_mongo_20230905.sql.tar.gz
+tar xvf sft_vpkt_from_mongo_20230918.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftvpkt;
 CREATE DATABASE ipt_sftvpkt;
 \q
-sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20230905.sql
+sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20230918.sql
 sudo -u postgres psql
 \c ipt_sftvpkt
 GRANT USAGE ON SCHEMA ipt_sftvpkt TO ipt_sql_20;
