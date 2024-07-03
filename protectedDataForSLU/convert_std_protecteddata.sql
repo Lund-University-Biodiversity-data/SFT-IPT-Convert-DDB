@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS IPT_SFTstd_protected.IPT_SFTstd_protected_POINTSLINES_SURVE
 DROP TABLE IF EXISTS IPT_SFTstd_protected.IPT_SFTstd_protected_DISTANCE_COVERED;
 DROP TABLE IF EXISTS IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES;
 DROP TABLE IF EXISTS IPT_SFTstd_protected.IPT_SFTstd_protected_COUNT_POINTLINES;
+DROP TABLE IF EXISTS IPT_SFTstd_protected.IPT_SFTstd_protected_NULL_POINTLINES;
 
 DROP SCHEMA IF EXISTS IPT_SFTstd_protected;
 CREATE SCHEMA IPT_SFTstd_protected;
@@ -63,17 +64,37 @@ UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_DETAILSART
 SET infraSpecificEpithet=''
 WHERE LENGTH(infraSpecificEpithet)>0 AND LENGTH(infraSpecificEpithet)<3;
 
-
-
+/* only the lines with 2 rows : 000 and 999 => event with no obs at all */
 CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_EVENTSNOOBS AS
 select datum, karta, persnr
 from (
 	select datum, karta, persnr, COUNT(*) as tot from mongo_totalstandard 
-	WHERE art not in ('000', '999') 
-	AND yr< :year_max
+	WHERE yr< :year_max
 	group by datum, karta, persnr
 ) as eventnoobs
-where tot=0;
+where tot=2;
+
+/* point eller line with no obs */
+/* first we count the records per point/line */
+CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_NULL_POINTLINES AS
+SELECT karta, datum, 'P1' AS pointline, SUM(p1) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P2' AS pointline, SUM(p2) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P3' AS pointline, SUM(p3) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P4' AS pointline, SUM(p4) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P5' AS pointline, SUM(p5) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P6' AS pointline, SUM(p6) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P7' AS pointline, SUM(p7) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'P8' AS pointline, SUM(p8) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L1' AS pointline, SUM(l1) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L2' AS pointline, SUM(l2) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L3' AS pointline, SUM(l3) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L4' AS pointline, SUM(l4) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L5' AS pointline, SUM(l5) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L6' AS pointline, SUM(l6) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L7' AS pointline, SUM(l7) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum 
+UNION SELECT karta, datum, 'L8' AS pointline, SUM(l8) as totalIndiv FROM mongo_totalstandard where art<>'000' and art<>'999' GROUP BY karta, datum;
+/* then we keep only the total = 0 */
+/* DELETE FROM IPT_SFTstd_protected.IPT_SFTstd_protected_NULL_POINTLINES WHERE totalIndiv<>0; */
 
 
 /* create a view without the timOfObservation=0 (not filled in) */
@@ -99,6 +120,8 @@ UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_TIMES
 SET p7=NULL WHERE p7=0;
 UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_TIMES 
 SET p8=NULL WHERE p8=0;
+
+
 
 /* START TIME FROM LISTTIME */
 CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_LISTTIME AS
@@ -136,22 +159,22 @@ UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_LISTTIME SET p8=NULL WHERE p8=0
 
 /* create one row for each point/line surveyed */
 CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_POINTSLINES_SURVEYED AS
-SELECT karta, datum, 'P1' AS pointline, p1 as surveytime FROM mongo_totalstandard where art='000' AND p1 IS NOT NULL
-UNION SELECT karta, datum, 'P2' AS pointline, p2 as surveytime FROM mongo_totalstandard where art='000' AND p2 IS NOT NULL
-UNION SELECT karta, datum, 'P3' AS pointline, p3 as surveytime FROM mongo_totalstandard where art='000' AND p3 IS NOT NULL
-UNION SELECT karta, datum, 'P4' AS pointline, p4 as surveytime FROM mongo_totalstandard where art='000' AND p4 IS NOT NULL
-UNION SELECT karta, datum, 'P5' AS pointline, p5 as surveytime FROM mongo_totalstandard where art='000' AND p5 IS NOT NULL
-UNION SELECT karta, datum, 'P6' AS pointline, p6 as surveytime FROM mongo_totalstandard where art='000' AND p6 IS NOT NULL
-UNION SELECT karta, datum, 'P7' AS pointline, p7 as surveytime FROM mongo_totalstandard where art='000' AND p7 IS NOT NULL
-UNION SELECT karta, datum, 'P8' AS pointline, p8 as surveytime FROM mongo_totalstandard where art='000' AND p8 IS NOT NULL
-UNION SELECT karta, datum, 'L1' AS pointline, l1 as surveytime FROM mongo_totalstandard where art='000' AND L1 IS NOT NULL
-UNION SELECT karta, datum, 'L2' AS pointline, l2 as surveytime FROM mongo_totalstandard where art='000' AND L2 IS NOT NULL
-UNION SELECT karta, datum, 'L3' AS pointline, l3 as surveytime FROM mongo_totalstandard where art='000' AND L3 IS NOT NULL
-UNION SELECT karta, datum, 'L4' AS pointline, l4 as surveytime FROM mongo_totalstandard where art='000' AND l4 IS NOT NULL
-UNION SELECT karta, datum, 'L5' AS pointline, l5 as surveytime FROM mongo_totalstandard where art='000' AND l5 IS NOT NULL
-UNION SELECT karta, datum, 'L6' AS pointline, l6 as surveytime FROM mongo_totalstandard where art='000' AND l6 IS NOT NULL
-UNION SELECT karta, datum, 'L7' AS pointline, l7 as surveytime FROM mongo_totalstandard where art='000' AND l7 IS NOT NULL
-UNION SELECT karta, datum, 'L8' AS pointline, l8 as surveytime FROM mongo_totalstandard where art='000' AND l8 IS NOT NULL
+SELECT karta, datum, 'P1' AS pointline, p1 as surveytime FROM mongo_totalstandard where art='000' AND p1 IS NOT NULL AND p1<>0
+UNION SELECT karta, datum, 'P2' AS pointline, p2 as surveytime FROM mongo_totalstandard where art='000' AND p2 IS NOT NULL AND p2<>0 
+UNION SELECT karta, datum, 'P3' AS pointline, p3 as surveytime FROM mongo_totalstandard where art='000' AND p3 IS NOT NULL AND p3<>0
+UNION SELECT karta, datum, 'P4' AS pointline, p4 as surveytime FROM mongo_totalstandard where art='000' AND p4 IS NOT NULL AND p4<>0
+UNION SELECT karta, datum, 'P5' AS pointline, p5 as surveytime FROM mongo_totalstandard where art='000' AND p5 IS NOT NULL AND p5<>0
+UNION SELECT karta, datum, 'P6' AS pointline, p6 as surveytime FROM mongo_totalstandard where art='000' AND p6 IS NOT NULL AND p6<>0
+UNION SELECT karta, datum, 'P7' AS pointline, p7 as surveytime FROM mongo_totalstandard where art='000' AND p7 IS NOT NULL AND p7<>0
+UNION SELECT karta, datum, 'P8' AS pointline, p8 as surveytime FROM mongo_totalstandard where art='000' AND p8 IS NOT NULL AND p8<>0
+UNION SELECT karta, datum, 'L1' AS pointline, l1 as surveytime FROM mongo_totalstandard where art='000' AND L1 IS NOT NULL AND l1<>0
+UNION SELECT karta, datum, 'L2' AS pointline, l2 as surveytime FROM mongo_totalstandard where art='000' AND L2 IS NOT NULL AND l2<>0
+UNION SELECT karta, datum, 'L3' AS pointline, l3 as surveytime FROM mongo_totalstandard where art='000' AND L3 IS NOT NULL AND l3<>0
+UNION SELECT karta, datum, 'L4' AS pointline, l4 as surveytime FROM mongo_totalstandard where art='000' AND l4 IS NOT NULL AND l4<>0
+UNION SELECT karta, datum, 'L5' AS pointline, l5 as surveytime FROM mongo_totalstandard where art='000' AND l5 IS NOT NULL AND l5<>0
+UNION SELECT karta, datum, 'L6' AS pointline, l6 as surveytime FROM mongo_totalstandard where art='000' AND l6 IS NOT NULL AND l6<>0
+UNION SELECT karta, datum, 'L7' AS pointline, l7 as surveytime FROM mongo_totalstandard where art='000' AND l7 IS NOT NULL AND l7<>0
+UNION SELECT karta, datum, 'L8' AS pointline, l8 as surveytime FROM mongo_totalstandard where art='000' AND l8 IS NOT NULL AND l8<>0
 ORDER BY karta, datum;
 
 UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_POINTSLINES_SURVEYED
@@ -243,6 +266,49 @@ SELECT C1.karta, 'L8' as pointline, CONCAT(C1.k1, ' ', C1.k2) AS k1, CONCAT(C2.k
 FROM IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES C1, IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES C2
 WHERE C1.karta=C2.karta and C1.pointline='P8' and C2.pointline='P1';
 
+/* TEMPORARY AS LONG AS WE DON't HAVE THE RIGHT staregppid */
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L1' and coordP.pointline='P1';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L2' and coordP.pointline='P2';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L3' and coordP.pointline='P3';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L4' and coordP.pointline='P4';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L5' and coordP.pointline='P5';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L6' and coordP.pointline='P6';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L7' and coordP.pointline='P7';
+UPDATE IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES as coordL
+SET staregppid=coordP.staregppid
+from IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES coordP
+where coordL.karta=coordP.karta
+and coordL.pointline='L8' and coordP.pointline='P8';
+
+
 /* get the min time as startTime and max time as endTime */
 /*
 CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_STARTENDTIME AS
@@ -277,11 +343,12 @@ distinct CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
 '' AS parentEventId,
 CONCAT(CAST(TO_DATE(t.datum,'YYYYMMDD') as text), '/', CAST(TO_DATE(t.datum,'YYYYMMDD') as text)) AS eventDate,
 CASE 
-	WHEN T.BCSurveyStartTime='00:00' AND T.BCSurveyStartTime='00:00' THEN ''
+	WHEN T.BCSurveyStartTime='00:00' THEN ''
 	ELSE CONCAT(T.BCSurveyStartTime, '/',T.BCSurveyFinishTime) 
 END AS eventTime, 
+CONCAT('SFT:recorderId:', P.anonymizedId) AS personAnonymizedId, /* used for emof only ! */
 I.staregosid AS locationId,
-CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
+CONCAT('SFTstd:siteId:', cast(I.anonymizedId AS text)) AS verbatimLocality,
 CAST(null as numeric) as sampleSizeValue,
 null as sampleSizeUnit,
 'EPSG:4326' AS geodeticDatum,
@@ -296,11 +363,13 @@ null AS samplingProtocol,
 null AS samplingEffort,
 CAST(null as numeric) AS coordinateUncertaintyInMeters
 FROM standardrutter_koordinater K, mongo_sites I, IPT_SFTstd_protected.IPT_SFTstd_protected_CONVERT_COUNTY C, mongo_totalstandard T
+LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE T.karta=I.internalSiteId
 AND I.internalsiteid=K.karta
 AND C.code=I.lan
 AND T.art='000'
 AND T.yr<:year_max
+AND ((T.yr=2015 AND T.karta = '03E2H') OR (T.yr=2015 AND T.karta = '04G2H') OR (T.yr=2000 AND T.karta = '05C2H') OR (T.yr=2005 AND T.karta = '06F7C') OR (T.yr=2022 AND T.karta = '16C2C') OR (T.yr=1999 AND T.karta = '22G7C'))
 
 UNION
 
@@ -317,8 +386,9 @@ CASE
 	THEN CONCAT(to_char(LPAD(cast(PL.surveytime as text), 4, '0')::time,'HH24:MI'),'/', CAST(to_char(LPAD(cast(PL.surveytime as text), 4, '0')::time + interval '5 minutes','HH24:MI') AS text)) 
 	ELSE null
 END AS eventTime, 
+CONCAT('SFT:recorderId:', P.anonymizedId) AS personAnonymizedId, /* used for emof only ! */
 PK.staregppid AS locationId,
-CONCAT('SFTstd:siteId:', cast(anonymizedId AS text), ':', PL.pointline) AS verbatimLocality,
+CONCAT('SFTstd:siteId:', cast(I.anonymizedId AS text), ':', PL.pointline) AS verbatimLocality,
 CASE
 	WHEN LEFT(DC.pointline, 1) = 'L' and DC.distance is not null and DC.distance<>99
 	THEN DC.distance*100
@@ -376,12 +446,14 @@ FROM mongo_sites I,
 IPT_SFTstd_protected.IPT_SFTstd_protected_POINTSLINES_SURVEYED PL
 left join IPT_SFTstd_protected.IPT_SFTstd_protected_COORDINATES PK ON PK.karta=PL.karta AND PK.pointline=PL.pointline,
 IPT_SFTstd_protected.IPT_SFTstd_protected_DISTANCE_COVERED DC, mongo_totalstandard T
+LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE T.karta=I.internalSiteId
 AND PL.karta=T.karta AND T.datum=PL.datum
 AND DC.karta=T.karta AND T.datum=DC.datum
 AND DC.pointline=PL.pointline
 AND T.art='000'
 AND T.yr<:year_max
+AND ((T.yr=2015 AND T.karta = '03E2H') OR (T.yr=2015 AND T.karta = '04G2H') OR (T.yr=2000 AND T.karta = '05C2H') OR (T.yr=2005 AND T.karta = '06F7C') OR (T.yr=2022 AND T.karta = '16C2C') OR (T.yr=1999 AND T.karta = '22G7C'))
 
 order by eventID;
 
@@ -414,13 +486,10 @@ AND C.code=I.lan
 
 
 
-
-
 CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_OCCURRENCE AS
 SELECT
 CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':', PL.pointline) as eventID,
 CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id, ':', PL.pointline) as occurrenceID,
-CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'mänsklig observation' AS basisOfRecord,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 E.arthela AS vernacularName,
@@ -444,7 +513,6 @@ FROM mongo_sites I, lists_module_biodiv E, IPT_SFTstd_protected.IPT_SFTstd_prote
 IPT_SFTstd_protected.IPT_SFTstd_protected_POINTSLINES_SURVEYED PL,
 IPT_SFTstd_protected.IPT_SFTstd_protected_COUNT_POINTLINES PC,
 mongo_totalstandard T
-LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE  I.internalSiteId=T.karta
 AND PL.pointline=PC.pointline
 AND DA.art=E.art
@@ -454,7 +522,7 @@ AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
 AND PC.count>0
 AND T.yr<:year_max
-
+AND ((T.yr=2015 AND T.karta = '03E2H') OR (T.yr=2015 AND T.karta = '04G2H') OR (T.yr=2000 AND T.karta = '05C2H') OR (T.yr=2005 AND T.karta = '06F7C') OR (T.yr=2022 AND T.karta = '16C2C') OR (T.yr=1999 AND T.karta = '22G7C'))
 /*
 
 'Animalia' AS kingdom,
@@ -478,7 +546,6 @@ UNION
 SELECT 
 CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
 CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':5000001', ':L') as occurrenceID,
-CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
 0 AS individualCount,
@@ -495,7 +562,6 @@ CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'absent' AS occurrenceStatus,
 'The number of individuals observed is the sum total from all the surveyed lines on the route.' AS occurrenceRemarks
 FROM mongo_sites I, IPT_SFTstd_protected.IPT_SFTstd_protected_EVENTSNOOBS T
-LEFT JOIN mongo_persons P ON P.persnr=T.persnr 
 WHERE  I.internalSiteId=T.karta
 */
 ORDER BY eventID, taxonID;
@@ -506,20 +572,75 @@ ORDER BY eventID, taxonID;
 CREATE TABLE IPT_SFTstd_protected.IPT_SFTstd_protected_EMOF AS
 SELECT
 DISTINCT eventID,
-'Location type' AS measurementType,
-'Line' AS measurementValue
+null as occurrenceID,
+'locationProtected' AS measurementType,
+'ja' AS measurementValue
 FROM IPT_SFTstd_protected.IPT_SFTstd_protected_SAMPLING
 UNION 
 SELECT
 DISTINCT eventID,
-'Internal site Id' AS measurementType,
-internalSiteId AS measurementValue
+null as occurrenceID,
+'locationType' AS measurementType,
+CASE 
+	WHEN samplingProtocol = 'linjetaxering' THEN 'linje'
+	WHEN samplingProtocol = 'punkttaxering' THEN 'punkt'
+	ELSE 'rutt'
+END AS measurementValue
 FROM IPT_SFTstd_protected.IPT_SFTstd_protected_SAMPLING
+
+UNION
+SELECT
+DISTINCT eventID,
+null as occurrenceID,
+'recordedBy' AS measurementType,
+personAnonymizedId AS measurementValue
+FROM IPT_SFTstd_protected.IPT_SFTstd_protected_SAMPLING
+where eventType='besök'
+
 UNION 
 SELECT
 DISTINCT eventID,
-'Null visit' AS measurementType,
-nullvisit AS measurementValue
-FROM IPT_SFTstd_protected.IPT_SFTstd_protected_SAMPLING;
+null as occurrenceID,
+'dimension' AS measurementType,
+'2' AS measurementValue
+FROM IPT_SFTstd_protected.IPT_SFTstd_protected_SAMPLING
+
+UNION 
+/* point/line with no observation */
+SELECT
+CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) as eventID,
+null as occurrenceID,
+'noObservations' AS measurementType,
+CASE
+	WHEN totalIndiv=0 THEN 'sant'
+	ELSE 'falskt'
+END AS measurementValue
+FROM IPT_SFTstd_protected.IPT_SFTstd_protected_POINTSLINES_SURVEYED PL, 
+IPT_SFTstd_protected.IPT_SFTstd_protected_NULL_POINTLINES NO,mongo_sites I
+WHERE PL.karta=I.internalSiteId
+AND PL.karta=NO.karta
+AND PL.datum=NO.datum
+AND PL.pointline=NO.pointline
+/* TO BE REMOVED */
+AND (CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) LIKE 'SFTstd:19990629:484:%'
+	OR CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) LIKE 'SFTstd:20000608:44:%'
+	OR CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) LIKE 'SFTstd:20050609:81:%'
+	OR CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) LIKE 'SFTstd:20150601:16:%'
+	OR CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) LIKE 'SFTstd:20150608:40:%'
+	OR CONCAT('SFTstd:', NO.datum, ':', I.anonymizedId, ':', PL.pointline) LIKE 'SFTstd:20220614:320:%'
+)
+
+
+UNION
+SELECT
+eventID,
+occurrenceID,
+'euTaxonID' AS measurementType,
+E.eu_sp_code AS measurementValue
+FROM IPT_SFTstd_protected.IPT_SFTstd_protected_OCCURRENCE O, lists_module_biodiv E 
+WHERE E.suppliedname=O.scientificName
+AND E.eu_sp_code is not null and E.eu_sp_code<>''
+
+;
 
 

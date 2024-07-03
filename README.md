@@ -26,6 +26,8 @@ persnr varchar(64)
 + CHECK THE NEW anonymized Ids. dit excel file with :
 db.person.update({personId:'bf357895-d746-4a8e-b30e-e84a4889d773'},{$set:{anonymizedId:2825}});
 
+ - cenntroidTopoKartan (ex koordinater_mittpunkt_topokartan, coming from excel custom extract) => mongo_centroidtopokartan
+
 
  - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3) => lists_module_biodiv
  concat with mammals. CHeck the same colomns. Rename suppliedname
@@ -110,7 +112,7 @@ first make sure you have the last verison of the ecodata-mongo database
 locally :
 
 ´´´
-sudo -u postgres psql sft_std_from_mongo < toMongoAsMainDatabase/convert_std.sql
+	sudo -u postgres psql sft_std_from_mongo < toMongoAsMainDatabase/convert_std.sql
 ´´´
 then export the whole database to canmoveapp
 ´´´
@@ -233,3 +235,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftkfr TO ipt_sql_20 ;
 
 
 ´´´
+
+
+
+
+SELECT COUNT(*) FROM 

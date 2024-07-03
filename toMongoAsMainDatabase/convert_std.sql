@@ -4,7 +4,7 @@
 \set database_name sft_std_from_mongo
 
 
-/* TO BE CHANGED TO Y-1 TO USE year_max<= instead of < */
+/* year_max<=  < */
 \set year_max 2023
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_TIMES;
@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_OCCURRENCE;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EMOF;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_DETAILSART;
+DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_STARTFINISHTIMES;
 
 DROP SCHEMA IF EXISTS IPT_SFTstd;
 CREATE SCHEMA IPT_SFTstd;
@@ -56,29 +57,35 @@ INSERT INTO IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY (code, name) VALUES ('Z', 'Jäm
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES AS
 SELECT * FROM lists_module_biodiv
-WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035', '100039', '100046', '100054', '100055', '100057', '100066', '100067', '100093', '100142', '100145', '103061', '103071', '205543', '267320'); 
+WHERE protected_adb LIKE '4%' or protected_adb LIKE '5%'; 
 
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
 FROM lists_module_biodiv;
-/* Manual fix of the art that ends with "L" or "Li" or "T" */
+
+
+/* Manual fix of the species Columba livia f. domestica */
 UPDATE IPT_SFTstd.IPT_SFTstd_DETAILSART
-SET infraSpecificEpithet=''
-WHERE LENGTH(infraSpecificEpithet)>0 AND LENGTH(infraSpecificEpithet)<3
+SET infraSpecificEpithet='', specificepithet='livia f. domestica'
+WHERE suppliedname='Columba livia f. domestica';
+/*WHERE LENGTH(infraSpecificEpithet)>0 AND LENGTH(infraSpecificEpithet)<3;*/
 
-
+/* store all the survey start/finishtime */
+CREATE TABLE IPT_SFTstd.IPT_SFTstd_STARTFINISHTIMES AS 
+SELECT datum, karta, bcsurveystarttime, bcsurveyfinishtime
+FROM mongo_totalstandard
+where art='000';
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS AS
 select datum, karta, persnr
 from (
 	select datum, karta, persnr, COUNT(*) as tot from mongo_totalstandard 
 	WHERE art not in ('000', '999') 
-	AND yr< :year_max
+	AND yr <= :year_max
 	group by datum, karta, persnr
 ) as eventnoobs
 where tot=0;
-
 
 /* create a view without the timOfObservation=0 (not filled in) */
 /* to avoid them in the LEAST function */
@@ -132,16 +139,20 @@ CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
 'line transect survey' AS samplingProtocol,
-TO_DATE(t.datum,'YYYYMMDD') AS eventDate,
+CONCAT(CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT), '/', CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT)) AS eventDate,
 CASE 
+	WHEN SFT.bcsurveystarttime='00:00' THEN ''
+	ELSE CONCAT(SFT.bcsurveystarttime, '/',SFT.bcsurveyfinishtime) 
+END AS eventTime, 
+/* CASE 
 	WHEN ST.startTime is null THEN ''
 	WHEN ST.startTime = '0999' THEN ''
 	ELSE CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') 
-END AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
+END AS eventTime, // art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.staregosid AS locationId,
-CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS internalSiteId,
+CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -155,33 +166,39 @@ ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused 
 'Limited' as accessRights,
 'Lund University' AS institutionCode,
 'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
-'Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), Snowy owl (fjälluggla; Bubo scandiacus), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; Vulpes lagopus).' AS informationWithheld,
+'Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Grey wolf (varg; Canis lupus lupus), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; Vulpes lagopus).' AS informationWithheld,
 'false' AS nullvisit
-FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, mongo_totalstandard T
+FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, IPT_SFTstd.IPT_SFTstd_STARTFINISHTIMES SFT, mongo_totalstandard T
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE T.karta=I.internalSiteId
 AND I.internalsiteid=K.karta
+AND SFT.karta=T.karta 
+AND SFT.datum=T.datum
 AND C.code=I.lan
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
 AND t.lind>0
-AND T.yr<:year_max
+AND T.yr <= :year_max
 
 UNION 
 
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
 'line transect survey' AS samplingProtocol,
-TO_DATE(t.datum,'YYYYMMDD') AS eventDate,
+CONCAT(CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT), '/', CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT)) AS eventDate,
 CASE 
+	WHEN SFT.bcsurveystarttime='00:00' THEN ''
+	ELSE CONCAT(SFT.bcsurveystarttime, '/',SFT.bcsurveyfinishtime) 
+END AS eventTime, 
+/* CASE 
 	WHEN ST.startTime is null THEN ''
 	WHEN ST.startTime = '0999' THEN ''
 	ELSE CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),':00') 
-END AS eventTime, /* art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
+END AS eventTime, // art=000 find the minimum among P1-8. convert to time. No end time / no interval */ 
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.staregosid AS locationId,
-CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS internalSiteId,
+CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -195,21 +212,18 @@ ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused 
 'Free usage' as accessRights,
 'Lund University' AS institutionCode,
 'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
-'Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), Snowy owl (fjälluggla; Bubo scandiacus), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; Vulpes lagopus).' AS informationWithheld,
+'Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently these species are: Lesser white-fronted goose (fjällgås; Anser erythropus), Golden eagle (kungsörn; Aquila chrysaetos), White-tailed eagle (havsörn; Haliaeetus albicilla), Pallid harrier (stäpphök; Circus macrourus),  Montagu’s harrier (ängshök; Circus pygargus), Peregrine falcon (pilgrimsfalk; Falco peregrinus), Gyrfalcon (jaktfalk; Falco rusticolus), Eagle owl (berguv; Bubo bubo), White-backed woodpecker (vitryggig hackspett; Dendrocopos leucotos), Eurasian lynx (lo; Lynx lynx), Grey wolf (varg; Canis lupus lupus), Brown bear (brunbjörn; Ursus arctos), Wolverine (järv; Gulo gulo) and Arctic fox (fjällräv; Vulpes lagopus).' AS informationWithheld,
 'true' AS nullvisit
-FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS T
+FROM mongo_centroidtopokartan K, mongo_sites I, IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY C, IPT_SFTstd.IPT_SFTstd_STARTFINISHTIMES SFT, IPT_SFTstd.IPT_SFTstd_EVENTSNOOBS T
 left join IPT_SFTstd.IPT_SFTstd_STARTTIME ST on T.datum=ST.datum AND T.datum=ST.datum AND T.karta=ST.karta
 WHERE T.karta=I.internalSiteId
 AND I.internalsiteid=K.karta
+AND SFT.karta=T.karta 
+AND SFT.datum=T.datum
 AND C.code=I.lan
 
 
 order by eventID;
-
-
-
-
-
 
 
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_OCCURRENCE AS
@@ -224,16 +238,11 @@ T.lind AS organismQuantity,
 'individuals' AS organismQuantityType,
 E.SuppliedName AS scientificName,
 E.arthela AS vernacularName,
-E.dyntaxa_id AS taxonID,
+CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
 DA.infraspecificepithet AS infraSpecificEpithet,
-CASE 
-	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
-	WHEN T.art IN ('237', '260', '261', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
-	WHEN T.art IN ('418') THEN 'speciesAggregate' 
-	ELSE 'species' 
-END AS taxonRank,
+E.taxon_rank as taxonRank,
 'SFTstd' AS collectionCode,
 'present' AS occurrenceStatus,
 'The number of individuals observed is the sum total from all the surveyed lines on the route.' AS occurrenceRemarks
@@ -245,7 +254,7 @@ AND T.art=E.art
 AND T.art<>'000' and T.art<>'999'
 and T.art not in (select distinct art from IPT_SFTstd.IPT_SFTstd_HIDDENSPECIES H)
 AND t.lind>0
-AND T.yr<:year_max
+AND T.yr <= :year_max
 
 UNION 
 
@@ -282,12 +291,6 @@ SELECT
 DISTINCT eventID,
 'Location type' AS measurementType,
 'Line' AS measurementValue
-FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
-UNION 
-SELECT
-DISTINCT eventID,
-'Internal site Id' AS measurementType,
-internalSiteId AS measurementValue
 FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
 UNION 
 SELECT

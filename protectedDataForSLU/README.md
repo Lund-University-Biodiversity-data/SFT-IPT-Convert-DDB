@@ -43,11 +43,9 @@ db.person.update({personId:'bf357895-d746-4a8e-b30e-e84a4889d773'},{$set:{anonym
 #### lists_module_biodiv
 ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. 
 
-WATCH OUT art as varchar3, varchar(2) for 2 field euring
-concat with mammals !!
+WATCH OUT art as varchar3, varchar(20) for 2 field euring
 Check the same colomns. 
 Rename suppliedname
-remove extra guid column
 ´´´
 UPDATE lists_module_biodiv SET art = LPAD(art, 3, '0')
 WHERE length(art)<3
@@ -76,24 +74,42 @@ sudo -u postgres psql sft_std_from_mongo < protectedDataForSLU/convert_std_prote
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd  > sft_std_from_mongo_202XXXXXX.sql
-tar cvzf sft_std_from_mongo_202XXXXXX.sql.tar.gz sft_std_from_mongo_202XXXXXX.sql
-scp sft_std_from_mongo_202XXXXXX.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd_protected  > sft_std_protected_from_mongo_202XXXXXX.sql
+tar cvzf sft_std_protected_from_mongo_202XXXXXX.sql.tar.gz sft_std_protected_from_mongo_202XXXXXX.sql
+scp sft_std_protected_from_mongo_202XXXXXX.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_std_from_mongo_202XXXXXX.sql.tar.gz
+tar xvf sft_std_protected_from_mongo_202XXXXXX.sql.tar.gz
 sudo -u postgres psql
-DROP DATABASE ipt_sftstd;
-CREATE DATABASE ipt_sftstd;
+DROP DATABASE ipt_sftstd_protected;
+CREATE DATABASE ipt_sftstd_protected;
 \q
-sudo -u postgres psql ipt_sftstd < sft_std_from_mongo_202XXXXXX.sql
-sudo -u postgres psql
-\c ipt_sftstd
-GRANT USAGE ON SCHEMA ipt_sftstd TO ipt_sql_20;
-GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftstd TO ipt_sql_20 ;
+sudo -u postgres psql ipt_sftstd_protected < sft_std_protected_from_mongo_202XXXXXX.sql
+sudo -u postgres psql ipt_sftstd_protected
+GRANT USAGE ON SCHEMA ipt_sftstd_protected TO ipt_sql_20;
+GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftstd_protected TO ipt_sql_20 ;
 \q
 
 
 ´´´
+
+DELETE FROM ipt_sftstd_protected.ipt_sftstd_protected_sampling WHERE eventid <> 'SFTstd:19990629:484:P1';
+DELETE FROM ipt_sftstd_protected.ipt_sftstd_protected_occurrence WHERE eventid <> 'SFTstd:19990629:484:P1';
+DELETE FROM ipt_sftstd_protected.ipt_sftstd_protected_emof WHERE eventid <> 'SFTstd:19990629:484:P1';
+SELECT COUNT(*) FROM ipt_sftstd_protected.ipt_sftstd_protected_sampling;
+SELECT COUNT(*) FROM ipt_sftstd_protected.ipt_sftstd_protected_occurrence;
+SELECT COUNT(*) FROM ipt_sftstd_protected.ipt_sftstd_protected_emof;
+
+UPDATE ipt_sftstd_protected.ipt_sftstd_protected_occurrence SET basisofrecord='HumanObservation';
+
+DROP DATABASE WHEN FINISHED !!!
+
+if needed 
+sudo nano /etc/postgresql/11/main/pg_hba.conf
+
+
+SELECT COUNT(*)  , measurementtype
+from ipt_sftstd_protected.ipt_sftstd_protected_emof
+group by measurementtype
