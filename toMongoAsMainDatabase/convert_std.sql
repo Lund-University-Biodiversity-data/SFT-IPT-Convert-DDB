@@ -1,6 +1,5 @@
 /*\i lib/config.sql*/
 
-/*\c :database_name*/
 \set database_name sft_std_from_mongo
 
 
@@ -63,7 +62,6 @@ WHERE protected_adb LIKE '4%' or protected_adb LIKE '5%';
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
 FROM lists_module_biodiv;
-
 
 /* Manual fix of the species Columba livia f. domestica */
 UPDATE IPT_SFTstd.IPT_SFTstd_DETAILSART
@@ -157,8 +155,8 @@ C.name AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
 'The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS locationRemarks,
-ROUND(cast(K.wgs84_lat as numeric), 5) AS decimalLatitude, /* already diffused all locations 25 000 */
-ROUND(cast(K.wgs84_lon as numeric), 5) AS decimalLongitude, /* already diffused all locations 25 000 */
+ROUND(K.wgs84_lat::float8::numeric, 5) AS decimalLatitude, /* already diffused all locations 25 000 */
+ROUND(K.wgs84_lon::float8::numeric, 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
 'SE' AS countryCode,
 'EUROPE' AS continent,

@@ -1,6 +1,9 @@
-\i lib/config.sql
+/*\i lib/config.sql*/
 
-\set year_max 2022
+\set database_name sft_kfr_from_mongo
+
+
+\set year_max 2023
 
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_SAMPLING;
@@ -52,17 +55,21 @@ UPDATE mongo_totalkust
 SET surveystarttime=null, surveyfinishtime=null 
 WHERE surveystarttime='00:00' and surveyfinishtime='00:00';
 
-/* TO BE REPLACED WITH PROPER SKYDKLASS */
 /* HIDDENSPECIES 045 */
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES AS
-SELECT * FROM lists_eurolist_dr638_3mammals
-WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035', '100039', '100046', '100054', '100055', '100057', '100066', '100067', '100093', '100142', '100145', '103061', '103071', '205543', '267320'); 
-/* and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES) */
+SELECT * FROM lists_module_biodiv
+WHERE protected_adb LIKE '4%' or protected_adb LIKE '5%'; /* WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035', '100039', '100046', '100054', '100055', '100057', '100066', '100067', '100093', '100142', '100145', '103061', '103071', '205543', '267320'); */
 
 
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
-FROM lists_eurolist_dr638_3mammals;
+FROM lists_module_biodiv;
+
+/* Manual fix of the species Columba livia f. domestica */
+UPDATE IPT_SFTkfr.IPT_SFTkfr_DETAILSART
+SET infraSpecificEpithet='', specificepithet='livia f. domestica'
+WHERE suppliedname='Columba livia f. domestica';
+/*WHERE LENGTH(infraSpecificEpithet)>0 AND LENGTH(infraSpecificEpithet)<3;*/
 
 
 /* START TIME */
@@ -97,19 +104,19 @@ To be fixed
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
-'https://www.fageltaxering.lu.se/sites/default/files/files/Uppsatser/projektplankustfaglar_rev_2016.pdf' AS samplingProtocol,
+'https://www.fageltaxering.lu.se/inventera#kust' AS samplingProtocol,
 CAST (round(K.area_m2) AS INTEGER) AS sampleSizeValue,
 'square metre' AS sampleSizeUnit,
-TO_DATE(T.datum,'YYYYMMDD') AS eventDate,
+CONCAT(CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT), '/', CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT)) AS eventDate,
 CASE 
-	WHEN T.surveystarttime IS NULL THEN '' 
-	WHEN T.surveyfinishtime IS NULL THEN CONCAT(T.surveystarttime, '/')
+	WHEN T.surveystarttime IS NULL OR T.surveystarttime='' THEN '' 
+	WHEN T.surveyfinishtime IS NULL OR T.surveyfinishtime='' THEN CONCAT(T.surveystarttime, '/')
 	ELSE CONCAT(T.surveystarttime, '/', T.surveyfinishtime)
 END AS eventTime,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 K.staregppid AS locationId,
-CONCAT('SFTkfr:siteId:', T.ruta) AS internalSiteId,
+CONCAT('SFTkfr:siteId:', T.ruta) AS verbatimLocality,
 'The surveyor can opt to report numbers of birds seen on islands vs on open water, but the numbers included in this dataset are for the entire square. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently this concerns one species only: White-tailed eagle (havsörn; Haliaeetus albicilla). In addition, data for razorbills (tordmule; Alca torda) on Stora Karlsö (square I0002) are at present not included in this dataset.' AS informationWithheld,
 'EUROPE' AS continent,
 'Sweden' AS country,
@@ -123,7 +130,7 @@ K.mitt_5x5_sweref99_o AS verbatimLongitude,
 */
 'EPSG:4326' AS geodeticDatum,
 3500 AS coordinateUncertaintyInMeters,
-'The coordinates supplied are for the central point of a 5 x 5 km square, within which the central point of the curvey square is located.' AS locationRemarks,
+'The coordinates supplied are for the central point of a 5 x 5 km square, within which the central point of the survey square is located.' AS locationRemarks,
 ROUND(K.mitt_5x5_wgs84_lat::float8::numeric, 5) AS decimalLatitude, /* cast to float8 first, then to numeric in order to round */
 ROUND(K.mitt_5x5_wgs84_lon::float8::numeric, 5) AS decimalLongitude, /* cast to float8 first, then to numeric in order to round */
 'English' as language,
@@ -159,7 +166,7 @@ T.ind AS organismQuantity,
 'individuals' AS organismQuantityType,
 'adult' AS lifeStage,
 'present' AS occurrenceStatus,
-E.dyntaxa_id AS taxonID,
+CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
 E.suppliedname AS scientificName,
 E.arthela AS vernacularName,
@@ -172,7 +179,7 @@ END AS taxonRank,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
 DA.infraspecificepithet AS infraSpecificEpithet
-FROM mongo_sites K, lists_eurolist_dr638_3mammals E, IPT_SFTkfr.IPT_SFTkfr_DETAILSART DA, mongo_totalkust T
+FROM mongo_sites K, lists_module_biodiv E, IPT_SFTkfr.IPT_SFTkfr_DETAILSART DA, mongo_totalkust T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE k.internalsiteid=T.ruta
 AND T.art=E.art
@@ -197,7 +204,7 @@ CASE
 	WHEN T.pullicount = 0 THEN 'absent'
 	ELSE 'present' 
 END AS occurrenceStatus,
-'102935' AS taxonID,
+'urn:lsid:dyntaxa.se:Taxon:102935' AS taxonID,
 'Animalia' AS kingdom,
 'Somateria mollissima' AS scientificName,
 'Ejder' AS vernacularName,
@@ -226,7 +233,7 @@ NULL AS organismQuantity,
 NULL AS organismQuantityType,
 NULL AS lifeStage,
 'present' AS occurrenceStatus,
-E.dyntaxa_id AS taxonID,
+CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
 E.suppliedname AS scientificName,
 E.arthela AS vernacularName,
@@ -239,7 +246,7 @@ END AS taxonRank,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
 DA.infraspecificepithet AS infraSpecificEpithet
-FROM mongo_sites K, lists_eurolist_dr638_3mammals E, IPT_SFTkfr.IPT_SFTkfr_DETAILSART DA, mongo_totalkust T
+FROM mongo_sites K, lists_module_biodiv E, IPT_SFTkfr.IPT_SFTkfr_DETAILSART DA, mongo_totalkust T
 LEFT JOIN IPT_SFTkfr.IPT_SFTkfr_OBSERVERS Pe ON Pe.ruta=T.ruta and Pe.yr=T.yr 
 WHERE k.internalsiteid=T.ruta
 AND T.art=E.art
@@ -266,15 +273,6 @@ CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_EMOF AS
 SELECT
 DISTINCT eventID,
 NULL as occurrenceID,
-'Internal site Id' AS measurementType,
-internalSiteId AS measurementValue
-FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
-
-UNION 
-
-SELECT
-DISTINCT eventID,
-NULL as occurrenceID,
 'Location type' AS measurementType,
 'Square' AS measurementValue
 FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
@@ -295,18 +293,17 @@ eventID,
 NULL as occurrenceID,
 'Eider pulli counted' AS measurementType,
 CASE 
-	WHEN S.pullicounted_for_emof = 'ja' THEN 'yes'
+	WHEN pullicounted_for_emof = 'ja' THEN 'yes'
 	ELSE 'no'
 END AS measurementValue
-FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING S
-WHERE EXTRACT(YEAR FROM S.eventdate)<=:year_max
+FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
 
 UNION
 
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 NULL as occurrenceID,
-'Square borders' AS measurementType,
+'Span' AS measurementType,
 CASE 
 	WHEN K.routetype = 'Pragm' THEN 'redrawn'
 	WHEN K.routetype = 'Strikt' THEN 'original'

@@ -1,9 +1,6 @@
-\i lib/config.sql
+\set database_name sft_vpkt_from_mongo
 
-/*\c :database_name*/
-\set database_name sft_vpkt_from_mongo_to_dwca
-
-\set year_max 2021
+\set year_max 2022
 
 DROP TABLE IF EXISTS IPT_SFTvpkt.IPT_SFTvpkt_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTvpkt.IPT_SFTvpkt_STARTENDTIME;
@@ -16,11 +13,6 @@ DROP TABLE IF EXISTS IPT_SFTvpkt.IPT_SFTvpkt_EMOF;
 DROP SCHEMA IF EXISTS IPT_SFTvpkt;
 CREATE SCHEMA IPT_SFTvpkt;
 
-/* Make sure that the art column contains 3 digits */
-UPDATE mongo_totalvinterpkt SET art = LPAD(art, 3, '0')
-WHERE length(art)<3;
-UPDATE lists_module_biodiv SET art = LPAD(art, 3, '0')
-WHERE length(art)<3;
 
 CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_EVENTSNOOBS AS
 select datum, persnr, rnr, yr, per
@@ -34,19 +26,23 @@ where tot=1;
 
 CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_HIDDENSPECIES AS
 SELECT * FROM lists_module_biodiv
-WHERE dyntaxa_id in ('100005', '100008', '100011', '100020', '100032', '100035', '100039', '100046', '100054', '100055', '100057', '100066', '100067', '100093', '100142', '100145', '103061', '103071', '205543', '267320'); 
-/* and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTvpkt.IPT_SFTvpkt_HIDDENSPECIES) */
-
+WHERE protected_adb LIKE '4%' or protected_adb LIKE '5%'; 
 
 /*INSERT INTO IPT_SFTvpkt.IPT_SFTvpkt_EVENTSNOOBS VALUES ('20210826', '491210-1', '01', '2020');*/
 
 /* START TIME */
 CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_STARTENDTIME AS
 /*SELECT persnr, rnr, datum, per, LPAD(CAST(p03 AS text), 4, '0') AS startTime, LPAD(CAST(p04 AS text), 4, '0') AS endTime*/
-SELECT persnr, rnr, datum, per, p03 AS startTime, p04 AS endTime
+SELECT persnr, rnr, datum, per, p03 AS startTime, p04 AS endTime,
+TO_DATE(datum,'YYYYMMDD') as startdate,
+TO_DATE(datum,'YYYYMMDD') as enddate /* updated later in case of different dates! */
 from mongo_totalvinterpkt
 WHERE art='000';
-
+/* change the enddate in case it's not the same day */
+UPDATE IPT_SFTvpkt.IPT_SFTvpkt_STARTENDTIME
+SET enddate=startDate +1
+WHERE starttime<>'' AND endtime<>'' AND starttime is not null AND endtime is not null
+AND CAST(LEFT(endtime, 2) AS INTEGER)<CAST(LEFT(starttime, 2) AS INTEGER);
 
 CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
@@ -74,7 +70,7 @@ CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CRE
 /* T.per AS periodWinter, */
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
-CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT) AS eventDate, /* cast as text to allow range later */
+CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 /*
 CASE 
     WHEN ST.startTime IS NULL and ST.endTime IS NULL THEN ''
@@ -87,13 +83,15 @@ CONCAT(ST.startTime,'/',ST.endTime) AS eventTime,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.staregosid AS locationId,
-CONCAT('SFTpkt:siteId:', I.anonymizedId) AS internalSiteId,
+CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
 I.lan AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
 'The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS locationRemarks,
-CAST(ROUND(cast(K.wgs84_lat*10 as numeric), 4)/10 AS float) AS decimalLatitude, /* Trick to ROUND 5 figures after the comma! */
-CAST(ROUND(cast(K.wgs84_lon*10 as numeric), 4)/10 AS float) AS decimalLongitude, /* Trick to ROUND 5 figures after the comma! */
+/*CAST(ROUND(cast(K.wgs84_lat*10 as numeric), 4)/10 AS float) AS decimalLatitude,  Trick to ROUND 5 figures after the comma! */
+/*CAST(ROUND(cast(K.wgs84_lon*10 as numeric), 4)/10 AS float) AS decimalLongitude,  Trick to ROUND 5 figures after the comma! */
+ROUND(K.wgs84_lat::float8::numeric, 5) AS decimalLatitude, /* already diffused all locations 25 000 */
+ROUND(K.wgs84_lon::float8::numeric, 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
 'SE' AS countryCode,
 'EUROPE' AS continent,
@@ -121,7 +119,7 @@ CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CRE
 /* T.per AS periodWinter, */
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
-CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT) AS eventDate, /* cast as text to allow range later */
+CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 CONCAT(ST.startTime,'/',ST.endTime) AS eventTime,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
@@ -131,8 +129,10 @@ I.lan AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
 'The coordinates supplied are for the central point of a 25 x 25 km survey grid square, within which the route is located.' AS locationRemarks,
-CAST(ROUND(cast(K.wgs84_lat*10 as numeric), 4)/10 AS float) AS decimalLatitude, /* Trick to ROUND 5 figures after the comma! */
-CAST(ROUND(cast(K.wgs84_lon*10 as numeric), 4)/10 AS float) AS decimalLongitude, /* Trick to ROUND 5 figures after the comma! */
+/*CAST(ROUND(cast(K.wgs84_lat*10 as numeric), 4)/10 AS float) AS decimalLatitude,  Trick to ROUND 5 figures after the comma! */
+/*CAST(ROUND(cast(K.wgs84_lon*10 as numeric), 4)/10 AS float) AS decimalLongitude,  Trick to ROUND 5 figures after the comma! */
+ROUND(K.wgs84_lat::float8::numeric, 5) AS decimalLatitude, /* already diffused all locations 25 000 */
+ROUND(K.wgs84_lon::float8::numeric, 5) AS decimalLongitude, /* already diffused all locations 25 000 */
 'Sweden' AS country,
 'SE' AS countryCode,
 'EUROPE' AS continent,
@@ -213,16 +213,11 @@ T.ind AS organismQuantity,
 'individuals' AS organismQuantityType,
 DA.suppliedname AS scientificName,
 E.arthela AS vernacularName,
-E.dyntaxa_id AS taxonID,
+CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
 DA.infraspecificepithet AS infraSpecificEpithet,
-CASE 
-    WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
-    WHEN T.art IN ('237', '260', '261', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
-    WHEN T.art IN ('418') THEN 'speciesAggregate' 
-    ELSE 'species' 
-END AS taxonRank,
+E.taxon_rank as taxonRank,
 'SFTvpkt' AS collectionCode,
 'present' AS occurrenceStatus,
 'The number of individuals observed is the sum total from all of the twenty points on the route.' AS occurrenceRemarks
@@ -249,7 +244,7 @@ CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'individuals' AS organismQuantityType,
 'Aves' AS scientificName,
 'SpeciesIncludedInSurvey' AS vernacularName,
-'4000104' AS taxonID,
+'urn:lsid:dyntaxa.se:Taxon:4000104' AS taxonID,
 '' AS genus,
 '' AS specificEpithet,
 '' AS infraSpecificEpithet,
@@ -286,16 +281,7 @@ AND spe_isconfidential = false
 */
 
 
-CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_EMOF AS
-
-SELECT
-DISTINCT eventID,
-'Internal site Id' AS measurementType,
-internalSiteId AS measurementValue
-FROM IPT_SFTvpkt.IPT_SFTvpkt_SAMPLING
-WHERE eventtype='event'
-
-UNION 
+CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_EMOF AS 
 
 SELECT
 DISTINCT eventID,
