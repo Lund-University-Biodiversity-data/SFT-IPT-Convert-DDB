@@ -70,6 +70,8 @@ CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CRE
 /* T.per AS periodWinter, */
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
+ST.startdate AS eventStartDate,
+ST.enddate AS eventEndDate,
 CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 /*
 CASE 
@@ -119,6 +121,8 @@ CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CRE
 /* T.per AS periodWinter, */
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
+ST.startdate AS eventStartDate,
+ST.enddate AS eventEndDate,
 CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 CONCAT(ST.startTime,'/',ST.endTime) AS eventTime,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
@@ -155,7 +159,7 @@ INSERT INTO ipt_sftvpkt.ipt_sftvpkt_sampling (eventID, parentEventID, eventDate,
 SELECT
 distinct parenteventid,
 superparenteventid,
-CONCAT(MIN(eventdate), '/', MAX(eventdate)), 
+CONCAT(MIN(eventstartdate), '/', MAX(eventenddate)), 
 'period',
 'Sweden',
 'SE',
@@ -169,7 +173,7 @@ ORDER BY parenteventid;
 INSERT INTO ipt_sftvpkt.ipt_sftvpkt_sampling (eventID, eventDate, eventType, country, countryCode, continent)
 SELECT
 superparenteventid,
-CONCAT(MIN(eventdate), '/', MAX(eventdate)), 
+CONCAT(MIN(eventstartdate), '/', MAX(eventenddate)), 
 'season',
 'Sweden',
 'SE',

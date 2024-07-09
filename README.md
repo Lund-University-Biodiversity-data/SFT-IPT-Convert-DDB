@@ -188,8 +188,7 @@ DROP DATABASE ipt_sftvpkt;
 CREATE DATABASE ipt_sftvpkt;
 \q
 sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20240708.sql
-sudo -u postgres psql
-\c ipt_sftvpkt
+sudo -u postgres psql ipt_sftvpkt
 GRANT USAGE ON SCHEMA ipt_sftvpkt TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftvpkt TO ipt_sql_20 ;
 \q
