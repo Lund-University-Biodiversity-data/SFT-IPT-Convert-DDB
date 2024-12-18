@@ -76,6 +76,23 @@ WHERE length(art)<3
  - cenntroidTopoKartan (ex koordinater_mittpunkt_topokartan, coming from excel custom extract) => mongo_centroidtopokartan
 
 
+### SFTiwc-IPT-Convert-DDB
+# Requirements :
+´´´
+CREATE DATABASE sft_iwc_from_mongo;
+´´´
+ - records (coming from mongo excel extract, RECORDS. Watchout art varchar 3 and datum varchar 8, skip field komm) => mongo_totaliwc
+Make sure that the art column contains 3 digits
+´´´
+UPDATE mongo_totaliwc SET art = LPAD(art, 3, '0')
+WHERE length(art)<3
+´´´
+ - sites (coming from mongo excel extract, SITES. helcom_sub as varchar(20)) => mongo_sites
+ - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
+ - specieslist (ex-eurolist, coming from excel extract of lists.biodiversitydata.se, list dr627. WATCH OUT art as varchar3, euring as varchar10, dyntaxa as varchar10, delete one of the 2 columns guid, rename suppliedname column header) => lists_module_biodiv
+ - mongo_iwc_medobs (coming from mongo excel extract custom, iwc medobs) => mongo_iwc_medobs
+
+
 ### SFTkfr-IPT-Convert-DDB
 # Requirements :
 ´´´
@@ -230,6 +247,37 @@ GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftkfr TO ipt_sql_20 ;
 ´´´
 
 
+# IWC
+
+locally :
+
+´´´
+sudo -u postgres psql sft_iwc_from_mongo < toMongoAsMainDatabase/convert_iwc.sql
+´´´
+then export the whole database to canmoveapp
+´´´
+sudo -u postgres pg_dump sft_iwc_from_mongo -n ipt_sftiwc  > sft_iwc_from_mongo_20241218.sql
+tar cvzf sft_iwc_from_mongo_20241218.sql.tar.gz sft_iwc_from_mongo_20241218.sql
+scp sft_iwc_from_mongo_20241218.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+´´´
+then on canmoveapp
+´´´
+cd script_IPT_database/saves/
+tar xvf sft_iwc_from_mongo_20241218.sql.tar.gz
+sudo -u postgres psql
+DROP DATABASE ipt_sftiwc;
+CREATE DATABASE ipt_sftiwc;
+\q
+sudo -u postgres psql ipt_sftiwc < sft_iwc_from_mongo_20241218.sql
+sudo -u postgres psql ipt_sftiwc
+GRANT USAGE ON SCHEMA ipt_sftiwc TO ipt_sql_20;
+GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftiwc TO ipt_sql_20 ;
+\q
 
 
-select measurementType, count(*) from ipt_sftkfr.ipt_sftkfr_emof ise group by measurementType
+´´´
+
+
+
+select eventtype, count(*) from ipt_sftiwc.ipt_sftiwc_sampling ise group by eventtype
+select measurementType, count(*) from ipt_sftiwc.ipt_sftiwc_emof ise group by measurementType

@@ -115,7 +115,7 @@ CASE
 END AS eventTime,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
-K.staregppid AS locationId,
+K.stnregppid AS locationId,
 CONCAT('SFTkfr:siteId:', T.ruta) AS verbatimLocality,
 'The surveyor can opt to report numbers of birds seen on islands vs on open water, but the numbers included in this dataset are for the entire square. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently this concerns one species only: White-tailed eagle (havsörn; Haliaeetus albicilla). In addition, data for razorbills (tordmule; Alca torda) on Stora Karlsö (square I0002) are at present not included in this dataset.' AS informationWithheld,
 'EUROPE' AS continent,

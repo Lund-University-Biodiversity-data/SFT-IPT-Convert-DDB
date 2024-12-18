@@ -25,11 +25,10 @@ CREATE TABLE IPT_SFTspkt.IPT_SFTspkt_EVENTSNOOBS AS
 select datum, persnr, rnr, yr
 from (
     select datum, persnr, rnr, yr, COUNT(*) as tot from mongo_totalsommarpkt 
-    WHERE art not in ('000', '999') 
-    AND yr<= :year_max
+    WHERE yr<= :year_max
     group by datum, persnr, yr, rnr
 ) as eventnoobs
-where tot=0;
+where tot=1; /* if one, then only row 000, then no observations !*/
 
 CREATE TABLE IPT_SFTspkt.IPT_SFTspkt_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
@@ -38,9 +37,7 @@ FROM lists_module_biodiv;
 UPDATE IPT_SFTspkt.IPT_SFTspkt_DETAILSART
 SET infraSpecificEpithet=''
 WHERE LENGTH(infraSpecificEpithet)>0 AND LENGTH(infraSpecificEpithet)<3;
-/* rebuild the suppliedname without the extra L and i */
-UPDATE IPT_SFTspkt.IPT_SFTspkt_DETAILSART
-SET suppliedname= trim(concat(genus, ' ', specificepithet, ' ', infraspecificepithet));
+
 
 
 /*INSERT INTO IPT_SFTspkt.IPT_SFTspkt_EVENTSNOOBS VALUES ('20210826', '491210-1', '01', '2020');*/
@@ -75,7 +72,7 @@ CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 CONCAT(ST.starttime,'/',ST.endtime) AS eventTime,
 CAST(EXTRACT (doy from ST.startdate) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from ST.enddate) AS INTEGER) AS endDayOfYear,
-I.staregosid AS locationId,
+I.stnregosid AS locationId,
 CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
 I.lan AS county,
 'EPSG:4326' AS geodeticDatum,
@@ -112,7 +109,7 @@ CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 '' AS eventTime,
 CAST(EXTRACT (doy from ST.startdate) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from ST.enddate) AS INTEGER) AS endDayOfYear,
-I.staregosid AS locationId,
+I.stnregosid AS locationId,
 CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
 I.lan AS county,
 'EPSG:4326' AS geodeticDatum,

@@ -1,4 +1,4 @@
-\i lib/config.sql
+/*\i lib/config.sql*/
 
 /*\c :database_name*/
 \set database_name sft_std_from_mongo

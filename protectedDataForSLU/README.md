@@ -29,6 +29,9 @@ UPDATE mongo_totalstandard SET art = LPAD(art, 3, '0')
 WHERE length(art)<3
 ´´´
 
+#### mongo_totalsommarpkt
+ - records (coming from mongo excel extract, RECORDS. Watchout art varchar 3 and datum varchar 8, remove if double column final) => mongo_totalsommarpkt
+
 #### mongo_sites
 coming from mongo excel extract, SITES
 
@@ -56,10 +59,10 @@ copy the table from SFT psql prod database
 sudo -u postgres pg_dump -t standardrutter_koordinater sft_20220525 | sudo -u postgres psql sft_std_from_mongo
 
 
-#### sftstd_punktkoordinater
-import from excel files
-
-
+#### mongo_pkt_koordinater
+download CSV from https://canmove-app.ekol.lu.se/intranet/tools/coordinates_site_punkt.php?display=coord
+import and skip columns #, biocollectlink
+rename fields to avoid quotes/spaces
 
 ### scripts to canmove server
 
@@ -71,6 +74,7 @@ locally :
 
 ´´´
 sudo -u postgres psql sft_std_from_mongo < protectedDataForSLU/convert_std_protecteddata.sql
+sudo -u postgres psql sft_spkt_from_mongo < protectedDataForSLU/convert_spkt_protecteddata.sql
 ´´´
 then export the whole database to canmoveapp
 ´´´
