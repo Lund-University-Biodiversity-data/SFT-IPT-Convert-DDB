@@ -1,6 +1,23 @@
 \set database_name sft_iwc_from_mongo
 
 \set year_max 2023
+\set period 'September'
+
+/* variables depending on the month */
+
+select ('Januari' = :'period') as is_january \gset
+\if :is_january
+    \set englishmonth 'January'
+    \set prefixscheme 'ssij'   
+    \set ownerIC 'Swedish Environmental Protection Agency' 
+\else 
+    \set englishmonth 'September'
+    \set prefixscheme 'ssis'
+    \set ownerIC 'Lund university'
+\endif 
+
+/* end variables month dependant */
+
 
 DROP TABLE IF EXISTS IPT_SFTiwc.IPT_SFTiwc_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTiwc.IPT_SFTiwc_DETAILSART;
@@ -21,7 +38,8 @@ from mongo_iwc_medobs MO LEFT JOIN mongo_persons Pe ON MO.person=Pe.persnr
 WHERE MO.person<>'IWC-XXXX'
 group by site, yr, month, period, method;
 
-
+/* REMOVE the ice data for september */
+UPDATE mongo_totaliwc SET ice='' WHERE period='September';
 
 /* REMOVE some occurrences based on the field iwc_list_details */
 /* first add a field */
@@ -35,7 +53,7 @@ CREATE TABLE IPT_SFTiwc.IPT_SFTiwc_OCCURRENCE_TODELETE AS
 SELECT site, yr, datum, period, T.art, 'jan-2017' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period='Januari'
+AND period=:'period'
 AND E.iwc_list_details='jan-2017'
 AND T.datum < '20170101'
 
@@ -45,7 +63,7 @@ UNION
 SELECT site, yr, datum, period, T.art, 'jan-2020' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period='Januari'
+AND period=:'period'
 AND E.iwc_list_details='jan-2020'
 AND T.datum < '20200101'
 
@@ -55,7 +73,7 @@ UNION
 SELECT site, yr, datum, period, T.art, 'jan-2021' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period='Januari'
+AND period=:'period'
 AND E.iwc_list_details='jan-2021'
 AND T.datum < '20210101'
 
@@ -65,7 +83,7 @@ UNION
 SELECT site, yr, datum, period, T.art, 'no' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period='Januari'
+AND period=:'period'
 AND E.iwc_list_details=''
 ;
 
@@ -81,11 +99,11 @@ AND D.period=mongo_totaliwc.period
 
 
 CREATE TABLE IPT_SFTiwc.IPT_SFTiwc_EVENTSNOOBS AS
-select datum, persnr, site, yr, metod, period
+select datum, persnr, site, yr, metod, period, ice
 from (
-    select datum, persnr, site, yr, metod, period, COUNT(*) as tot from mongo_totaliwc 
+    select datum, persnr, site, yr, metod, period, ice, COUNT(*) as tot from mongo_totaliwc 
     where skip=false
-    group by datum, persnr, site, yr, metod, period
+    group by datum, persnr, site, yr, metod, period, ice
 ) as eventnoobs
 where tot=1;
 
@@ -97,6 +115,8 @@ WHERE protected_adb LIKE '4%' or protected_adb LIKE '5%';
 
 /*INSERT INTO IPT_SFTiwc.IPT_SFTiwc_EVENTSNOOBS VALUES ('20210826', '491210-1', '01', '2020');*/
 
+/* manual fix to remove the aggregate */
+UPDATE lists_module_biodiv SET suppliedname=REPLACE(suppliedname, '[agg.] ', '') where suppliedname like '%[agg.]%';
 
 CREATE TABLE IPT_SFTiwc.IPT_SFTiwc_DETAILSART AS
 SELECT art, suppliedname, SPLIT_PART(suppliedname, ' ', 1) as genus, SPLIT_PART(suppliedname, ' ', 2) as specificEpithet, SPLIT_PART(suppliedname, ' ', 3) as infraSpecificEpithet 
@@ -118,9 +138,9 @@ To be fixed
 
 CREATE TABLE IPT_SFTiwc.IPT_SFTiwc_SAMPLING AS
 SELECT 
-distinct CONCAT('SFTssij:', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
-CONCAT('SFTssij:', T.yr, ':January') as parentEventID,
-'Swedish Bird Survey: Swedish waterbird census (January)' as datasetName,
+distinct CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
+CONCAT('SFT', :'prefixscheme', ':', T.yr, ':', :'englishmonth') as parentEventID,
+CONCAT('Swedish Bird Survey: Swedish waterbird census (', :'englishmonth', ')') as datasetName,
 'event' as eventType,
 CASE 
     WHEN T.metod='båt' THEN 'from boat' 
@@ -149,7 +169,7 @@ I.decimallongitude AS decimalLongitude,
 'English' as language,
 'Full access' as accessRights,
 'Lund University' AS institutionCode,
-'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
+:'ownerIC' AS ownerInstitutionCode,
 'false' as nullvisit,
 I.ki as locationType, /* for EMOF */
 T.ice as snowIceCover /* for EMOF */
@@ -159,7 +179,7 @@ WHERE I.internalsiteid=T.site
 AND T.art<>'000' and T.art<>'999'
 and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTiwc.IPT_SFTiwc_HIDDENSPECIES)
 AND t.antal>0
-AND T.period='Januari'
+AND T.period=:'period'
 AND skip=false
 AND T.yr<=:year_max
 
@@ -167,9 +187,9 @@ AND T.yr<=:year_max
 UNION
 
 SELECT 
-distinct CONCAT('SFTssij:', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
-CONCAT('SFTssij:', T.yr, ':January') as parentEventID,
-'Swedish Bird Survey: Swedish waterbird census (January)' as datasetName,
+distinct CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
+CONCAT('SFT', :'prefixscheme', ':', T.yr, ':', :'englishmonth') as parentEventID,
+CONCAT('Swedish Bird Survey: Swedish waterbird census (', :'englishmonth', ')') as datasetName,
 'event' as eventType,
 CASE 
     WHEN T.metod='båt' THEN 'from boat' 
@@ -198,14 +218,14 @@ I.decimallongitude AS decimalLongitude,
 'English' as language,
 'Full access' as accessRights,
 'Lund University' AS institutionCode,
-'Swedish Environmental Protection Agency' AS ownerInstitutionCode,
+:'ownerIC' AS ownerInstitutionCode,
 'true' as nullvisit,
 I.ki as locationType, /* for EMOF */
-null as snowIceCover /* for EMOF */
+T.ice as snowIceCover /* for EMOF */
 FROM IPT_SFTiwc.IPT_SFTiwc_EVENTSNOOBS T, mongo_sites I
 LEFT JOIN county C ON I.lan=C.code
 WHERE I.internalsiteid=T.site
-AND T.period='Januari'
+AND T.period=:'period'
 AND T.yr<=:year_max
 
 order by eventID;
@@ -216,7 +236,7 @@ INSERT INTO IPT_SFTiwc.IPT_SFTiwc_sampling
 (eventID, datasetName, eventDate, eventType, country, countryCode, continent, institutionCode, ownerInstitutionCode)
 SELECT
 distinct parenteventid,
-'Swedish Bird Survey: Swedish waterbird census (January)',
+CONCAT('Swedish Bird Survey: Swedish waterbird census (', :'englishmonth', ')'),
 CONCAT(MIN(eventDateTempForMinMax), '/', MAX(eventDateTempForMinMax)), 
 'season',
 'Sweden',
@@ -253,8 +273,8 @@ Melanitta sp => 319.
 
 CREATE TABLE IPT_SFTiwc.IPT_SFTiwc_OCCURRENCE AS
 SELECT
-CONCAT('SFTssij:', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
-CONCAT('SFTssij:', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1)), ':', E.dyntaxa_id) as occurrenceID,
+CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
+CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1)), ':', E.dyntaxa_id) as occurrenceID,
 Pe.listpersons AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
@@ -270,7 +290,7 @@ DA.infraspecificepithet AS infraSpecificEpithet,
 '' AS scientificNameAuthorship,
 E.eu_sp_code AS euTaxonID, /* for EMOF */
 E.taxon_rank as taxonRank,
-'SFTssij' AS collectionCode,
+CONCAT('SFT', :'prefixscheme') AS collectionCode,
 'present' AS occurrenceStatus,
 'The number of individuals observed is the sum total from this site during this visit.' AS occurrenceRemarks
 FROM lists_module_biodiv E, IPT_SFTiwc.IPT_SFTiwc_DETAILSART DA, mongo_sites I, mongo_totaliwc T
@@ -281,15 +301,15 @@ AND I.internalsiteid=T.site
 AND T.art<>'000' and T.art<>'999'
 and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTiwc.IPT_SFTiwc_HIDDENSPECIES)
 AND t.antal>0
-AND T.period='Januari'
+AND T.period=:'period'
 AND skip=false
 AND T.yr<=:year_max
 
 UNION
 
 SELECT
-CONCAT('SFTssij:', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
-CONCAT('SFTssij:', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1)), ':4000104') as occurrenceID,
+CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1))) as eventID,
+CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.metod, 1)), ':4000104') as occurrenceID,
 Pe.listpersons AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
@@ -305,13 +325,13 @@ Pe.listpersons AS recordedBy,
 '' AS scientificNameAuthorship,
 '' AS euTaxonID, /* for EMOF */
 'class' AS taxonRank,
-'SFTssij' AS collectionCode,
+CONCAT('SFT', :'prefixscheme') AS collectionCode,
 'absent' AS occurrenceStatus,
 'The number of individuals observed is the sum total from this site during this visit.' AS occurrenceRemarks
 FROM mongo_sites I, IPT_SFTiwc.IPT_SFTiwc_EVENTSNOOBS T
 LEFT JOIN IPT_SFTiwc.IPT_SFTiwc_MEDOBS Pe ON Pe.site=T.site and Pe.yr=T.yr and Pe.period=T.period  and Pe.method=t.metod
 WHERE  I.internalsiteid=T.site
-AND T.period='Januari'
+AND T.period=:'period'
 AND T.yr<=:year_max
 
 ORDER BY eventID, taxonID;
