@@ -3,7 +3,7 @@
 \set database_name sft_kfr_from_mongo
 
 
-\set year_max 2023
+\set year_max 2024
 
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTkfr.IPT_SFTkfr_SAMPLING;
@@ -104,6 +104,7 @@ To be fixed
 CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
+'Swedish Bird Survey: Swedish coastal bird monitoring programme (Nationella kustfågelövervakningen)' AS datasetname,
 'https://www.fageltaxering.lu.se/inventera#kust' AS samplingProtocol,
 CAST (round(K.area_m2) AS INTEGER) AS sampleSizeValue,
 'square metre' AS sampleSizeUnit,
@@ -116,7 +117,7 @@ END AS eventTime,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST (EXTRACT (doy from  TO_DATE(T.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 K.stnregppid AS locationId,
-CONCAT('SFTkfr:siteId:', T.ruta) AS verbatimLocality,
+CONCAT('SFTkfr:siteId:', T.ruta) AS locality,
 'The surveyor can opt to report numbers of birds seen on islands vs on open water, but the numbers included in this dataset are for the entire square. Species with a security class 4 or higher (according to the Swedish species information centre (Artdatabanken)) are not shown in this dataset at present. Currently this concerns one species only: White-tailed eagle (havsörn; Haliaeetus albicilla). In addition, data for razorbills (tordmule; Alca torda) on Stora Karlsö (square I0002) are at present not included in this dataset.' AS informationWithheld,
 'EUROPE' AS continent,
 'Sweden' AS country,
@@ -168,8 +169,11 @@ T.ind AS organismQuantity,
 'present' AS occurrenceStatus,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
+E.class as class,
 E.suppliedname AS scientificName,
+E.author AS scientificNameAuthorship,
 E.arthela AS vernacularName,
+E.eu_sp_code AS eu_sp_code,
 CASE 
 	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
 	WHEN T.art IN ('237', '260', '261', '504', '505', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
@@ -206,8 +210,11 @@ CASE
 END AS occurrenceStatus,
 'urn:lsid:dyntaxa.se:Taxon:102935' AS taxonID,
 'Animalia' AS kingdom,
+'Aves' as class,
 'Somateria mollissima' AS scientificName,
+'Linnaeus, 1758' AS scientificNameAuthorship,
 'Ejder' AS vernacularName,
+'A063' AS eu_sp_code,
 'species' AS taxonRank,
 'Somateria' AS genus,
 'mollissima' AS specificEpithet,
@@ -235,8 +242,11 @@ NULL AS lifeStage,
 'present' AS occurrenceStatus,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 'Animalia' AS kingdom,
+E.class as class,
 E.suppliedname AS scientificName,
+E.author AS scientificNameAuthorship,
 E.arthela AS vernacularName,
+E.eu_sp_code AS eu_sp_code,
 CASE 
 	WHEN T.art IN ('245', '301', '302', '319') THEN 'genus' 
 	WHEN T.art IN ('237', '260', '261', '504', '505', '508', '509', '526', '536', '566', '608', '609', '626', '636', '666', '731') THEN 'subspecies' 
@@ -272,8 +282,17 @@ CREATE TABLE IPT_SFTkfr.IPT_SFTkfr_EMOF AS
 
 SELECT
 DISTINCT eventID,
+null as occurrenceID,
+'locationProtected' AS measurementType,
+'yes' AS measurementValue
+FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
+
+UNION 
+
+SELECT
+DISTINCT eventID,
 NULL as occurrenceID,
-'Location type' AS measurementType,
+'locationType' AS measurementType,
 'Square' AS measurementValue
 FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
 
@@ -282,7 +301,7 @@ UNION
 SELECT
 DISTINCT eventID,
 NULL as occurrenceID,
-'Null visit' AS measurementType,
+'noObservations' AS measurementType,
 nullvisit AS measurementValue
 FROM IPT_SFTkfr.IPT_SFTkfr_SAMPLING
 
@@ -291,7 +310,7 @@ UNION
 SELECT 
 eventID,
 NULL as occurrenceID,
-'Eider pulli counted' AS measurementType,
+'eiderPulliCounted' AS measurementType,
 CASE 
 	WHEN pullicounted_for_emof = 'ja' THEN 'yes'
 	ELSE 'no'
@@ -303,7 +322,7 @@ UNION
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 NULL as occurrenceID,
-'Span' AS measurementType,
+'span' AS measurementType,
 CASE 
 	WHEN K.routetype = 'Pragm' THEN 'redrawn'
 	WHEN K.routetype = 'Strikt' THEN 'original'
@@ -318,7 +337,7 @@ UNION
 SELECT 
 distinct CONCAT('SFTkfr:', T.datum, ':', T.ruta) as eventID,
 CONCAT('SFTkfr:', T.datum, ':', T.ruta, ':102935:total:pulli') as occurrenceID,
-'Pulli size class' AS measurementType,
+'pulliSizeClass' AS measurementType,
 case 
   when pullisize=1 THEN '< 25% of the adult size'
   when pullisize=2 THEN '25-50% of the adult size'
@@ -329,7 +348,21 @@ end AS measurementValue
 FROM mongo_totalkust T
 WHERE pullisize IS NOT NULL
 AND T.yr<=:year_max
-order by measurementType, eventID, occurrenceID;
+
+
+UNION 
+
+SELECT
+eventID as eventID,
+occurrenceID,
+'euTaxonID' AS measurementType,
+eu_sp_code AS measurementValue
+FROM IPT_SFTkfr.IPT_SFTkfr_OCCURRENCE
+WHERE eu_sp_code IS NOT NULL and eu_sp_code<>''
+
+order by measurementType, eventID, occurrenceID
+;
+
 
 
 

@@ -3,7 +3,7 @@
 /*\c :database_name*/
 \set database_name sft_spkt_from_mongo_to_dwca
 
-\set year_max 2023
+\set year_max 2024
 
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_STARTENDTIME;
@@ -66,14 +66,18 @@ To be fixed
 CREATE TABLE IPT_SFTspkt.IPT_SFTspkt_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId) as eventID,
+'Swedish Bird Survey: Summer point count routes (Sommarpunktrutterna)' AS datasetname,
 'point transect survey' AS samplingProtocol,
 CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 /*CONCAT(left(ST.starttime, length(cast(ST.starttime as text))-2), ':', right(ST.starttime, 2),'/',left(ST.endtime, length(cast(ST.endtime as text))-2), ':', right(ST.endtime, 2)) AS eventTime,*/
-CONCAT(ST.starttime,'/',ST.endtime) AS eventTime,
+CASE
+    WHEN (ST.starttime = '' AND ST.endtime = '') THEN ''
+    ELSE CONCAT(ST.starttime,'/',ST.endtime) 
+END AS eventTime,
 CAST(EXTRACT (doy from ST.startdate) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from ST.enddate) AS INTEGER) AS endDayOfYear,
 I.stnregosid AS locationId,
-CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
+CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS locality,
 I.lan AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -104,13 +108,14 @@ UNION
 
 SELECT 
 distinct CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId) as eventID,
+'Swedish Bird Survey: Summer point count routes (Sommarpunktrutterna)' AS datasetname,
 'point transect survey' AS samplingProtocol,
 CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
 '' AS eventTime,
 CAST(EXTRACT (doy from ST.startdate) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from ST.enddate) AS INTEGER) AS endDayOfYear,
 I.stnregosid AS locationId,
-CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
+CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS locality,
 I.lan AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -166,11 +171,14 @@ CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id) as occurrenc
 CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+E.class as class,
 T.ind AS individualCount,
 T.ind AS organismQuantity,
 'individuals' AS organismQuantityType,
 DA.suppliedname AS scientificName,
+E.author AS scientificNameAuthorship,
 E.arthela AS vernacularName,
+E.eu_sp_code AS eu_sp_code,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
@@ -197,11 +205,14 @@ CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId, ':4000104') as occurrenceID,
 CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+'' as class,
 0 AS individualCount,
 0 AS organismQuantity,
 'individuals' AS organismQuantityType,
 'Aves' AS scientificName,
+'' AS scientificNameAuthorship,
 'BirdsIncludedInSurvey' AS vernacularName,
+'' AS eu_sp_code,
 'urn:lsid:dyntaxa.se:Taxon:4000104' AS taxonID,
 '' AS genus,
 '' AS specificEpithet,
@@ -243,7 +254,17 @@ CREATE TABLE IPT_SFTspkt.IPT_SFTspkt_EMOF AS
 
 SELECT
 DISTINCT eventID,
-'Location type' AS measurementType,
+null as occurrenceID,
+'locationProtected' AS measurementType,
+'no' AS measurementValue
+FROM IPT_SFTspkt.IPT_SFTspkt_SAMPLING
+
+UNION 
+
+SELECT
+DISTINCT eventID,
+null as occurrenceID,
+'locationType' AS measurementType,
 'Point' AS measurementValue
 FROM IPT_SFTspkt.IPT_SFTspkt_SAMPLING
 
@@ -251,7 +272,8 @@ UNION
 
 SELECT
 DISTINCT eventID,
-'Null visit' AS measurementType,
+null as occurrenceID,
+'noObservations' AS measurementType,
 nullvisit AS measurementValue
 FROM IPT_SFTspkt.IPT_SFTspkt_SAMPLING
 
@@ -259,7 +281,8 @@ UNION
 
 SELECT 
 distinct CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId) as eventID,
-'Method of transport' AS measurementType,
+null as occurrenceID,
+'transportMethod' AS measurementType,
 CASE
     WHEN p01 = 1 THEN 'on foot or skis'
     WHEN p01 = 2 THEN 'by bike or moped'
@@ -278,7 +301,8 @@ UNION
 
 SELECT 
 distinct CONCAT('SFTspkt:', T.datum, ':', I.anonymizedId) as eventID,
-'Snow on ground' AS measurementType,
+null as occurrenceID,
+'snowIceCover' AS measurementType,
 CASE
     WHEN p02 = 1 THEN 'bare ground'
     WHEN p02 = 2 THEN 'snow covered ground'
@@ -291,4 +315,17 @@ AND T.art='000'
 and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTspkt.IPT_SFTspkt_HIDDENSPECIES)
 AND T.yr<= :year_max
 AND p02 IS NOT NULL
-order by eventID;
+
+
+UNION 
+
+SELECT
+eventID as eventID,
+occurrenceID,
+'euTaxonID' AS measurementType,
+eu_sp_code AS measurementValue
+FROM IPT_SFTspkt.IPT_SFTspkt_OCCURRENCE
+WHERE eu_sp_code IS NOT NULL and eu_sp_code<>''
+
+
+order by measurementType, eventID, occurrenceID;

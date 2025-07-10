@@ -1,7 +1,8 @@
 \set database_name sft_iwc_from_mongo
 
-\set year_max 2023
+\set year_max 2024
 \set period 'September'
+/*\set period 'Januari'*/
 
 /* variables depending on the month */
 
@@ -13,7 +14,7 @@ select ('Januari' = :'period') as is_january \gset
 \else 
     \set englishmonth 'September'
     \set prefixscheme 'ssis'
-    \set ownerIC 'Lund university'
+    \set ownerIC 'Lund University'
 \endif 
 
 /* end variables month dependant */
@@ -53,9 +54,17 @@ CREATE TABLE IPT_SFTiwc.IPT_SFTiwc_OCCURRENCE_TODELETE AS
 SELECT site, yr, datum, period, T.art, 'jan-2017' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period=:'period'
+AND period='Januari'
 AND E.iwc_list_details='jan-2017'
 AND T.datum < '20170101'
+
+UNION 
+
+SELECT site, yr, datum, period, T.art, 'jan-2017' as rule
+FROM mongo_totaliwc T, lists_module_biodiv E
+WHERE T.art=E.art
+AND period='September'
+AND E.iwc_list_details='jan-2017'
 
 UNION 
 
@@ -63,9 +72,17 @@ UNION
 SELECT site, yr, datum, period, T.art, 'jan-2020' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period=:'period'
+AND period='Januari'
 AND E.iwc_list_details='jan-2020'
 AND T.datum < '20200101'
+
+UNION 
+
+SELECT site, yr, datum, period, T.art, 'jan-2020' as rule
+FROM mongo_totaliwc T, lists_module_biodiv E
+WHERE T.art=E.art
+AND period='September'
+AND E.iwc_list_details='jan-2020'
 
 UNION 
 
@@ -73,13 +90,21 @@ UNION
 SELECT site, yr, datum, period, T.art, 'jan-2021' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
-AND period=:'period'
+AND period='Januari'
 AND E.iwc_list_details='jan-2021'
 AND T.datum < '20210101'
 
 UNION 
 
-/* species jan-2021 */
+SELECT site, yr, datum, period, T.art, 'jan-2021' as rule
+FROM mongo_totaliwc T, lists_module_biodiv E
+WHERE T.art=E.art
+AND period='September'
+AND E.iwc_list_details='jan-2021'
+
+UNION 
+
+/* species not specified */
 SELECT site, yr, datum, period, T.art, 'no' as rule
 FROM mongo_totaliwc T, lists_module_biodiv E
 WHERE T.art=E.art
@@ -278,6 +303,7 @@ CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.meto
 Pe.listpersons AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+E.class as class,
 T.antal AS individualCount,
 T.antal AS organismQuantity,
 'individuals' AS organismQuantityType,
@@ -287,7 +313,7 @@ CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
 DA.infraspecificepithet AS infraSpecificEpithet,
-'' AS scientificNameAuthorship,
+E.author AS scientificNameAuthorship,
 E.eu_sp_code AS euTaxonID, /* for EMOF */
 E.taxon_rank as taxonRank,
 CONCAT('SFT', :'prefixscheme') AS collectionCode,
@@ -313,6 +339,7 @@ CONCAT('SFT', :'prefixscheme', ':', T.datum, ':', T.site, ':', UPPER(LEFT(T.meto
 Pe.listpersons AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+'' as class,
 0 AS individualCount,
 0 AS organismQuantity,
 'individuals' AS organismQuantityType,
@@ -407,7 +434,7 @@ UNION
 
 
 SELECT
-null as eventID,
+eventID,
 occurrenceID,
 'euTaxonID' AS measurementType,
 euTaxonID AS measurementValue

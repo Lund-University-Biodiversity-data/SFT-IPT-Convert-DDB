@@ -254,29 +254,48 @@ locally :
 ´´´
 sudo -u postgres psql sft_iwc_from_mongo < toMongoAsMainDatabase/convert_iwc.sql
 ´´´
-then export the whole database to canmoveapp
+then export the whole database to canmoveapp IF USING THE SQL CONNECTION FOR THE IPT
+Can work as well now with csv files (tested with iwc)
+
 ´´´
 sudo -u postgres pg_dump sft_iwc_from_mongo -n ipt_sftiwc  > sft_iwc_from_mongo_20241218.sql
 tar cvzf sft_iwc_from_mongo_20241218.sql.tar.gz sft_iwc_from_mongo_20241218.sql
 scp sft_iwc_from_mongo_20241218.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
+
+JANUARI
 ´´´
 cd script_IPT_database/saves/
 tar xvf sft_iwc_from_mongo_20241218.sql.tar.gz
 sudo -u postgres psql
-DROP DATABASE ipt_sftiwc;
-CREATE DATABASE ipt_sftiwc;
+DROP DATABASE ipt_sftiwcj;
+CREATE DATABASE ipt_sftiwcj;
 \q
-sudo -u postgres psql ipt_sftiwc < sft_iwc_from_mongo_20241218.sql
-sudo -u postgres psql ipt_sftiwc
+sudo -u postgres psql ipt_sftiwcj < sft_iwc_from_mongo_20241218.sql
+sudo -u postgres psql ipt_sftiwcj
 GRANT USAGE ON SCHEMA ipt_sftiwc TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftiwc TO ipt_sql_20 ;
 \q
 
 
 ´´´
+SEPTEMBER
+´´´
+cd script_IPT_database/saves/
+tar xvf sft_iwc_from_mongo_20241218.sql.tar.gz
+sudo -u postgres psql
+DROP DATABASE ipt_sftiwcs;
+CREATE DATABASE ipt_sftiwcs;
+\q
+sudo -u postgres psql ipt_sftiwcs < sft_iwc_from_mongo_20241218.sql
+sudo -u postgres psql ipt_sftiwcs
+GRANT USAGE ON SCHEMA ipt_sftiwc TO ipt_sql_20;
+GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftiwc TO ipt_sql_20 ;
+\q
 
+
+´´´
 
 
 select eventtype, count(*) from ipt_sftiwc.ipt_sftiwc_sampling ise group by eventtype

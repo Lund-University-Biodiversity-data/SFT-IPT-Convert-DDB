@@ -4,7 +4,7 @@
 
 
 /* year_max<=  < */
-\set year_max 2023
+\set year_max 2024
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_TIMES;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY;
@@ -136,10 +136,12 @@ from (
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_SAMPLING AS
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
+'Swedish Bird Survey: Fixed routes (Standardrutterna)' AS datasetname,
 'line transect survey' AS samplingProtocol,
 CONCAT(CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT), '/', CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT)) AS eventDate,
 CASE 
-	WHEN SFT.bcsurveystarttime='00:00' THEN ''
+	WHEN SFT.bcsurveystarttime='00:00' AND SFT.bcsurveyfinishtime='00:00'  THEN ''
+	WHEN SFT.bcsurveystarttime='00:00' AND SFT.bcsurveyfinishtime='00:35'  THEN ''
 	ELSE CONCAT(SFT.bcsurveystarttime, '/',SFT.bcsurveyfinishtime) 
 END AS eventTime, 
 /* CASE 
@@ -150,7 +152,7 @@ END AS eventTime, // art=000 find the minimum among P1-8. convert to time. No en
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.stnregosid AS locationId,
-CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
+CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS locality,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -182,10 +184,12 @@ UNION
 
 SELECT 
 distinct CONCAT('SFTstd:', T.datum, ':', I.anonymizedId) as eventID,
+'Swedish Bird Survey: Fixed routes (Standardrutterna)' AS datasetname,
 'line transect survey' AS samplingProtocol,
 CONCAT(CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT), '/', CAST(TO_DATE(t.datum,'YYYYMMDD') AS TEXT)) AS eventDate,
 CASE 
-	WHEN SFT.bcsurveystarttime='00:00' THEN ''
+	WHEN SFT.bcsurveystarttime='00:00' AND SFT.bcsurveyfinishtime='00:00'  THEN ''
+	WHEN SFT.bcsurveystarttime='00:00' AND SFT.bcsurveyfinishtime='00:35'  THEN ''
 	ELSE CONCAT(SFT.bcsurveystarttime, '/',SFT.bcsurveyfinishtime) 
 END AS eventTime, 
 /* CASE 
@@ -196,7 +200,7 @@ END AS eventTime, // art=000 find the minimum among P1-8. convert to time. No en
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.stnregosid AS locationId,
-CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
+CONCAT('SFTstd:siteId:', cast(anonymizedId AS text)) AS locality,
 C.name AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -231,11 +235,14 @@ CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id, ':L') as occu
 CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+E.class AS class,
 T.lind AS individualCount,
 T.lind AS organismQuantity,
 'individuals' AS organismQuantityType,
 E.SuppliedName AS scientificName,
+E.author AS scientificNameAuthorship,
 E.arthela AS vernacularName,
+E.eu_sp_code AS eu_sp_code,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
@@ -262,11 +269,14 @@ CONCAT('SFTstd:', T.datum, ':', I.anonymizedId, ':5000001', ':L') as occurrenceI
 CONCAT('SFT:recorderId:', P.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+'' AS class,
 0 AS individualCount,
 0 AS organismQuantity,
 'individuals' AS organismQuantityType,
 'Animalia' AS scientificName,
+'' AS scientificNameAuthorship,
 'AnimalsIncludedInSurvey' AS vernacularName,
+'' AS eu_sp_code,
 '5000001' AS taxonID,
 '' AS genus,
 '' AS specificEpithet,
@@ -287,14 +297,37 @@ ORDER BY eventID, taxonID;
 CREATE TABLE IPT_SFTstd.IPT_SFTstd_EMOF AS
 SELECT
 DISTINCT eventID,
-'Location type' AS measurementType,
-'Line' AS measurementValue
+null as occurrenceID,
+'locationProtected' AS measurementType,
+'yes' AS measurementValue
 FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
+
 UNION 
+
 SELECT
 DISTINCT eventID,
-'Null visit' AS measurementType,
+null as occurrenceID,
+'locationType' AS measurementType,
+'Line' AS measurementValue
+FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
+
+UNION 
+
+SELECT
+DISTINCT eventID,
+null as occurrenceID,
+'noObservations' AS measurementType,
 nullvisit AS measurementValue
-FROM IPT_SFTstd.IPT_SFTstd_SAMPLING;
+FROM IPT_SFTstd.IPT_SFTstd_SAMPLING
+
+UNION 
+
+SELECT
+eventID as eventID,
+occurrenceID,
+'euTaxonID' AS measurementType,
+eu_sp_code AS measurementValue
+FROM IPT_SFTstd.IPT_SFTstd_OCCURRENCE
+WHERE eu_sp_code IS NOT NULL and eu_sp_code<>'';
 
 

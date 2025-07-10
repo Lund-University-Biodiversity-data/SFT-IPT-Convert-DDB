@@ -1,6 +1,6 @@
 \set database_name sft_vpkt_from_mongo
 
-\set year_max 2022
+\set year_max 2023
 
 DROP TABLE IF EXISTS IPT_SFTvpkt.IPT_SFTvpkt_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTvpkt.IPT_SFTvpkt_STARTENDTIME;
@@ -67,6 +67,7 @@ SELECT
 distinct CONCAT('SFTvpkt:', T.datum, ':', I.anonymizedId) as eventID,
 CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1), ':per', T.per) as parentEventID,
 CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CREATING the season level */
+'Swedish Bird Survey: Winter point count routes (Vinterpunktrutterna)' AS datasetname,
 /* T.per AS periodWinter, */
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
@@ -81,11 +82,14 @@ CASE
     ELSE CONCAT(left(ST.startTime, length(cast(ST.startTime as text))-2), ':', right(ST.startTime, 2),'/',left(ST.endTime, length(cast(ST.endTime as text))-2), ':', right(ST.endTime, 2))
 END AS eventTime,
 */
-CONCAT(ST.startTime,'/',ST.endTime) AS eventTime,
+CASE
+    WHEN (ST.starttime = '' AND ST.endtime = '') THEN ''
+    ELSE CONCAT(ST.starttime,'/',ST.endtime) 
+END AS eventTime,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.stnregosid AS locationId,
-CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS verbatimLocality,
+CONCAT('SFTpkt:siteId:', cast(anonymizedId AS text)) AS locality,
 I.lan AS county,
 'EPSG:4326' AS geodeticDatum,
 17700 AS coordinateUncertaintyInMeters,
@@ -118,13 +122,17 @@ SELECT
 distinct CONCAT('SFTvpkt:', T.datum, ':', I.anonymizedId) as eventID,
 CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1), ':per', T.per) as parentEventID,
 CONCAT('SFTvpkt:', T.yr, '-', (T.yr + 1)) as superparentEventID, /* ONLY FOR CREATING the season level */
+'Swedish Bird Survey: Winter point count routes (Vinterpunktrutterna)' AS datasetname,
 /* T.per AS periodWinter, */
 'event' as eventType,
 'point transect survey' AS samplingProtocol,
 ST.startdate AS eventStartDate,
 ST.enddate AS eventEndDate,
 CONCAT(ST.startdate,'/',ST.enddate) AS eventDate,
-CONCAT(ST.startTime,'/',ST.endTime) AS eventTime,
+CASE
+    WHEN (ST.starttime = '' AND ST.endtime = '') THEN ''
+    ELSE CONCAT(ST.starttime,'/',ST.endtime) 
+END AS eventTime,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS startDayOfYear,
 CAST(EXTRACT (doy from  TO_DATE(t.datum,'YYYYMMDD')) AS INTEGER) AS endDayOfYear,
 I.stnregosid AS locationId,
@@ -155,10 +163,11 @@ AND T.yr<=:year_max
 order by eventID;
 
 /* add the PERIOD events from the sampling table */
-INSERT INTO ipt_sftvpkt.ipt_sftvpkt_sampling (eventID, parentEventID, eventDate, eventType, country, countryCode, continent)
+INSERT INTO ipt_sftvpkt.ipt_sftvpkt_sampling (eventID, parentEventID, datasetname, eventDate, eventType, country, countryCode, continent)
 SELECT
 distinct parenteventid,
 superparenteventid,
+'Swedish Bird Survey: Winter point count routes (Vinterpunktrutterna)',
 CONCAT(MIN(eventstartdate), '/', MAX(eventenddate)), 
 'period',
 'Sweden',
@@ -170,9 +179,10 @@ ORDER BY parenteventid;
 
 
 /* add the SEASON events from the sampling table */
-INSERT INTO ipt_sftvpkt.ipt_sftvpkt_sampling (eventID, eventDate, eventType, country, countryCode, continent)
+INSERT INTO ipt_sftvpkt.ipt_sftvpkt_sampling (eventID, datasetname, eventDate, eventType, country, countryCode, continent)
 SELECT
 superparenteventid,
+'Swedish Bird Survey: Winter point count routes (Vinterpunktrutterna)',
 CONCAT(MIN(eventstartdate), '/', MAX(eventenddate)), 
 'season',
 'Sweden',
@@ -212,11 +222,14 @@ CONCAT('SFTvpkt:', T.datum, ':', I.anonymizedId, ':', E.dyntaxa_id) as occurrenc
 CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+E.class as class,
 T.ind AS individualCount,
 T.ind AS organismQuantity,
 'individuals' AS organismQuantityType,
 DA.suppliedname AS scientificName,
+E.author AS scientificNameAuthorship,
 E.arthela AS vernacularName,
+E.eu_sp_code AS eu_sp_code,
 CONCAT('urn:lsid:dyntaxa.se:Taxon:', E.dyntaxa_id) AS taxonID,
 DA.genus AS genus,
 DA.specificepithet AS specificEpithet,
@@ -243,11 +256,14 @@ CONCAT('SFTvpkt:', T.datum, ':', I.anonymizedId, ':4000104') as occurrenceID,
 CONCAT('SFT:recorderId:', Pe.anonymizedId) AS recordedBy,
 'HumanObservation' AS basisOfRecord,
 'Animalia' AS kingdom,
+'' as class,
 0 AS individualCount,
 0 AS organismQuantity,
 'individuals' AS organismQuantityType,
 'Aves' AS scientificName,
+'' AS scientificNameAuthorship,
 'SpeciesIncludedInSurvey' AS vernacularName,
+'' AS eu_sp_code,
 'urn:lsid:dyntaxa.se:Taxon:4000104' AS taxonID,
 '' AS genus,
 '' AS specificEpithet,
@@ -287,9 +303,21 @@ AND spe_isconfidential = false
 
 CREATE TABLE IPT_SFTvpkt.IPT_SFTvpkt_EMOF AS 
 
+
 SELECT
 DISTINCT eventID,
-'Location type' AS measurementType,
+null as occurrenceID,
+'locationProtected' AS measurementType,
+'no' AS measurementValue
+FROM IPT_SFTvpkt.IPT_SFTvpkt_SAMPLING
+WHERE eventtype='event'
+
+UNION 
+
+SELECT
+DISTINCT eventID,
+null as occurrenceID,
+'locationType' AS measurementType,
 'Point' AS measurementValue
 FROM IPT_SFTvpkt.IPT_SFTvpkt_SAMPLING
 WHERE eventtype='event'
@@ -298,7 +326,8 @@ UNION
 
 SELECT
 DISTINCT eventID,
-'Null visit' AS measurementType,
+null as occurrenceID,
+'noObservations' AS measurementType,
 nullvisit AS measurementValue
 FROM IPT_SFTvpkt.IPT_SFTvpkt_SAMPLING
 WHERE eventtype='event'
@@ -315,7 +344,8 @@ UNION
 */
 SELECT 
 distinct CONCAT('SFTvpkt:', T.datum, ':', I.anonymizedId) as eventID,
-'Method of transport' AS measurementType,
+null as occurrenceID,
+'transportMethod' AS measurementType,
 CASE
     WHEN p01 = 1 THEN 'on foot or skis'
     WHEN p01 = 2 THEN 'by bike or moped'
@@ -334,7 +364,8 @@ UNION
 
 SELECT 
 distinct CONCAT('SFTvpkt:', T.datum, ':', I.anonymizedId) as eventID,
-'Snow on ground' AS measurementType,
+null as occurrenceID,
+'snowIceCover' AS measurementType,
 CASE
     WHEN p02 = 1 THEN 'bare ground'
     WHEN p02 = 2 THEN 'snow covered ground'
@@ -348,4 +379,16 @@ and T.art NOT IN (SELECT DISTINCT art FROM IPT_SFTvpkt.IPT_SFTvpkt_HIDDENSPECIES
 AND T.yr<=:year_max
 AND p02 IS NOT NULL
 AND p02 IN (1,2,3) /* exclude the wrong values */
-order by eventID;
+
+
+UNION 
+
+SELECT
+eventID as eventID,
+occurrenceID,
+'euTaxonID' AS measurementType,
+eu_sp_code AS measurementValue
+FROM IPT_SFTvpkt.IPT_SFTvpkt_OCCURRENCE
+WHERE eu_sp_code IS NOT NULL and eu_sp_code<>''
+
+order by measurementType, eventID, occurrenceID;
