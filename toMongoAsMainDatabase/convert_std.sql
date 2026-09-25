@@ -4,7 +4,7 @@
 
 
 /* year_max<=  < */
-\set year_max 2024
+\set year_max 2025
 
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_TIMES;
 DROP TABLE IF EXISTS IPT_SFTstd.IPT_SFTstd_CONVERT_COUNTY;

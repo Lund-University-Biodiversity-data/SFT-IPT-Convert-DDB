@@ -21,7 +21,7 @@ WHERE length(art)<3
 ´´´
  - sites (coming from mongo excel extract, SITES) => mongo_sites
  - persons  (coming from mongo excel extract, PERSONS) => mongo_persons
-telnummer varcar(32)
+telnummer varchar(32)
 persnr varchar(64)
 + CHECK THE NEW anonymized Ids. dit excel file with :
 db.person.update({personId:'bf357895-d746-4a8e-b30e-e84a4889d773'},{$set:{anonymizedId:2825}});
@@ -132,9 +132,10 @@ then export the whole database to canmoveapp
 ´´´
 sudo -u postgres pg_dump sft_std_from_mongo -n ipt_sftstd  > sft_std_from_mongo_202XXXXXX.sql
 tar cvzf sft_std_from_mongo_202XXXXXX.sql.tar.gz sft_std_from_mongo_202XXXXXX.sql
-scp sft_std_from_mongo_202XXXXXX.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+scp sft_std_from_mongo_202XXXXXX.sql.tar.gz biol_mbt@canmove-dev.ekol.lu.se:/home/biol_mbt/
+#scp sft_std_from_mongo_202XXXXXX.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
-then on canmoveapp
+then on canmoveapp/canmovedev
 ´´´
 cd script_IPT_database/saves/
 tar xvf sft_std_from_mongo_202XXXXXX.sql.tar.gz
@@ -144,6 +145,7 @@ CREATE DATABASE ipt_sftstd;
 \q
 sudo -u postgres psql ipt_sftstd < sft_std_from_mongo_202XXXXXX.sql
 sudo -u postgres psql ipt_sftstd
+GRANT USAGE ON SCHEMA ipt_sftstd TO ekol_msn;
 GRANT USAGE ON SCHEMA ipt_sftstd TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftstd TO ipt_sql_20 ;
 \q
@@ -161,19 +163,20 @@ sudo -u postgres psql sft_spkt_from_mongo < toMongoAsMainDatabase/convert_spkt.s
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_spkt_from_mongo -n ipt_sftspkt  > sft_spkt_from_mongo_20240708.sql
-tar cvzf sft_spkt_from_mongo_20240708.sql.tar.gz sft_spkt_from_mongo_20240708.sql
-scp sft_spkt_from_mongo_20240708.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_spkt_from_mongo -n ipt_sftspkt  > sft_spkt_from_mongo_20260702.sql
+tar cvzf sft_spkt_from_mongo_20260702.sql.tar.gz sft_spkt_from_mongo_20260702.sql
+scp sft_spkt_from_mongo_20260702.sql.tar.gz biol_mbt@canmove-dev.ekol.lu.se:/home/biol_mbt/
+#scp sft_spkt_from_mongo_20260702.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_spkt_from_mongo_20240708.sql.tar.gz
+tar xvf sft_spkt_from_mongo_20260702.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftspkt;
 CREATE DATABASE ipt_sftspkt;
 \q
-sudo -u postgres psql ipt_sftspkt < sft_spkt_from_mongo_20240708.sql
+sudo -u postgres psql ipt_sftspkt < sft_spkt_from_mongo_20260702.sql
 sudo -u postgres psql ipt_sftspkt
 GRANT USAGE ON SCHEMA ipt_sftspkt TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftspkt TO ipt_sql_20 ;
@@ -192,19 +195,19 @@ sudo -u postgres psql sft_vpkt_from_mongo < toMongoAsMainDatabase/convert_vpkt.s
 ´´´
 then export the whole database to canmoveapp
 ´´´
-sudo -u postgres pg_dump sft_vpkt_from_mongo -n ipt_sftvpkt  > sft_vpkt_from_mongo_20240708.sql
-tar cvzf sft_vpkt_from_mongo_20240708.sql.tar.gz sft_vpkt_from_mongo_20240708.sql
-scp sft_vpkt_from_mongo_20240708.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
+sudo -u postgres pg_dump sft_vpkt_from_mongo -n ipt_sftvpkt  > sft_vpkt_from_mongo_20260702.sql
+tar cvzf sft_vpkt_from_mongo_20260702.sql.tar.gz sft_vpkt_from_mongo_20260702.sql
+scp sft_vpkt_from_mongo_20260702.sql.tar.gz  canmoveapp@canmove-app.ekol.lu.se:/home/canmoveapp/script_IPT_database/saves/
 ´´´
 then on canmoveapp
 ´´´
 cd script_IPT_database/saves/
-tar xvf sft_vpkt_from_mongo_20240708.sql.tar.gz
+tar xvf sft_vpkt_from_mongo_20260702.sql.tar.gz
 sudo -u postgres psql
 DROP DATABASE ipt_sftvpkt;
 CREATE DATABASE ipt_sftvpkt;
 \q
-sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20240708.sql
+sudo -u postgres psql ipt_sftvpkt < sft_vpkt_from_mongo_20260702.sql
 sudo -u postgres psql ipt_sftvpkt
 GRANT USAGE ON SCHEMA ipt_sftvpkt TO ipt_sql_20;
 GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftvpkt TO ipt_sql_20 ;
@@ -300,3 +303,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA ipt_sftiwc TO ipt_sql_20 ;
 
 select eventtype, count(*) from ipt_sftiwc.ipt_sftiwc_sampling ise group by eventtype
 select measurementType, count(*) from ipt_sftiwc.ipt_sftiwc_emof ise group by measurementType
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA public,ipt_sftspkt
+TO ekol_msn;

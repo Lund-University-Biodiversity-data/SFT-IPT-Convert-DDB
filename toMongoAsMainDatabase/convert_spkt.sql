@@ -3,7 +3,7 @@
 /*\c :database_name*/
 \set database_name sft_spkt_from_mongo_to_dwca
 
-\set year_max 2024
+\set year_max 2025
 
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_HIDDENSPECIES;
 DROP TABLE IF EXISTS IPT_SFTspkt.IPT_SFTspkt_STARTENDTIME;
